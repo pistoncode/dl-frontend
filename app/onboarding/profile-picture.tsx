@@ -1,3 +1,5 @@
-import ProfilePictureScreen from '../../src/screens/onboarding/ProfilePictureScreen';
+/**
+ * Profile Picture Route
+ */
 
-export default ProfilePictureScreen;
+export { ProfilePictureScreen as default } from '@features/onboarding/screens';

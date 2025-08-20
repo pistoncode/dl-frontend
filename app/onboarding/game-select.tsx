@@ -1,3 +1,5 @@
-import GameSelectScreen from '../../src/screens/onboarding/GameSelectScreen';
+/**
+ * Game Select Route
+ */
 
-export default GameSelectScreen;
+export { GameSelectScreen as default } from '@features/onboarding/screens';
