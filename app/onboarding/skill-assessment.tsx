@@ -1,3 +1,5 @@
-import SkillAssessmentScreen from '../../src/screens/onboarding/SkillAssessmentScreen';
+/**
+ * Skill Assessment Route
+ */
 
-export default SkillAssessmentScreen;
+export { SkillAssessmentScreen as default } from '@features/onboarding/screens';

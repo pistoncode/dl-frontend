@@ -1,3 +1,8 @@
-import PersonalInfoScreen from '../../src/screens/onboarding/PersonalInfoScreen';
+/**
+ * Personal Info Route
+ * 
+ * Expo Router file that exports the PersonalInfoScreen from the features directory.
+ * This separation keeps routing logic separate from business logic.
+ */
 
-export default PersonalInfoScreen;
+export { PersonalInfoScreen as default } from '@features/onboarding/screens';
