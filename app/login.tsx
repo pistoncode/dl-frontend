@@ -9,41 +9,80 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { authClient } from '@/lib/auth-client';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [usernameFocused, setUsernameFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignIn = () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
+  const handleSignIn = async () => {
+    try {
+      console.log('Calling authClient.signIn.username...');
+
+      const { data, error } = await authClient.signIn.username({
+        username: username, 
+        password: password,
+      });
+
+      if (error) {
+        console.error('API Error:', error.message);
+        Alert.alert('Sign In Failed', error.message || 'Invalid credentials.');
+        return;
+      }
+
+      if (data) {
+        console.log('Sign-in call completed successfully.');
+          router.replace('/onboarding');
+          
+        } else {
+         router.replace('/');
+        }
+      }
+     catch (error) {
+      Alert.alert('Sign In Failed', error.message || 'Invalid credentials.');
+    } finally {
+      setIsLoading(false);
     }
-    // TODO: Implement actual sign in logic
-    Alert.alert('Sign In', 'Sign in functionality to be implemented');
   };
 
-  const handleForgotPassword = () => {
+  const handleForgotPassword = async () => {
     // TODO: Implement forgot password logic
-    Alert.alert('Forgot Password', 'Forgot password functionality to be implemented');
+    const { data, error } = await authClient.requestPasswordReset({
+      email: email, // required
+      redirectTo: "", //dummy url
+  });
+  if (error) {
+    console.error('Error sending reset password email:', error);
+    Alert.alert('Error', 'Failed to send reset password email');
+  } else {
+    Alert.alert('Forgot Password', 'Reset password email sent');
+  }
   };
 
   const handleRegister = () => {
     router.push('/register');
   };
 
-  const handleFacebookLogin = () => {
+  const handleFacebookLogin = async () => {
     // TODO: Implement Facebook OAuth
-    Alert.alert('Facebook Login', 'Facebook login to be implemented');
+    const data = await authClient.signIn.social({
+      provider: "facebook"
+  })
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
+    console.log('Calling authClient.signIn.social...');
     // TODO: Implement Google OAuth
-    Alert.alert('Google Login', 'Google login to be implemented');
+      const data = await authClient.signIn.social({
+        provider: "google",
+      })
+      console.log(data);
   };
 
   const dismissKeyboard = () => {
