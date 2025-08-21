@@ -45,7 +45,7 @@ export default function RegisterScreen() {
       }
       if (data) {
         console.log('Sign up successful');
-        router.replace('/');
+        router.replace('/onboarding/personal-info');
       }
     } catch (error) {
       console.error('Sign up failed:', error);
