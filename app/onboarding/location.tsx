@@ -1,3 +1,7 @@
-import LocationScreen from '../../src/screens/onboarding/LocationScreen';
+/**
+ * Location Route
+ * 
+ * Expo Router file that exports the LocationScreen from the features directory.
+ */
 
-export default LocationScreen;
+export { LocationScreen as default } from '@features/onboarding/screens';
