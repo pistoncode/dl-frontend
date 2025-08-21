@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { authClient } from '../lib/auth-client';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -19,16 +20,37 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [usernameFocused, setUsernameFocused] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
-  const [phoneFocused, setPhoneFocused] = useState(false);
+  const [phoneFocused, setPhoneFocused] = useState(false);  
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignUp = () => {
+  // TODO: Validate all fields
+  const handleSignUp = async () => {
     if (!username.trim() || !email.trim() || !phoneNumber.trim() || !password.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    // TODO: Implement actual sign up logic
-    Alert.alert('Sign Up', 'Sign up functionality to be implemented');
+    try {
+    const { data, error } = await authClient.signUp.email({
+      username: username,
+      email: email,
+      name: "name",
+      // phone: phoneNumber,
+      password: password,
+      });
+      if (error) {
+        console.error('Sign up failed:', error);
+        Alert.alert('Sign Up Failed', error.message || 'An unexpected error occurred.');
+        return;
+      }
+      if (data) {
+        console.log('Sign up successful');
+        router.replace('/');
+      }
+    } catch (error) {
+      console.error('Sign up failed:', error);
+      Alert.alert('Sign Up Failed', 'An unexpected error occurred.');
+    }
   };
 
   const handleLogin = () => {
