@@ -2,26 +2,13 @@ import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
 import { usernameClient } from "better-auth/client/plugins";
+import { getBackendBaseURL, logNetworkConfig } from "../src/config/network";
  
-//This need fixing -_-
-const getBaseUrl = () => {
-
-  const { Platform } = require('react-native'); 
-
-//   if (Platform.OS === 'web') {
-//     return "http://localhost:3001";
-//   } else {
-
-    // Docker environment (for colleagues using Docker)
-    return "http://192.168.1.7:3001"; 
-    
-    // Local development (for testing without Docker)
-    // return "http://localhost:3001";
-//   }
-};
+// Log network configuration in development
+logNetworkConfig();
 
 export const authClient = createAuthClient({
-    baseURL: getBaseUrl(),
+    baseURL: getBackendBaseURL(),
     plugins: [
         usernameClient(),
         expoClient({
