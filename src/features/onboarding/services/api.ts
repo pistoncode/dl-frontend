@@ -1,6 +1,10 @@
 // API service for questionnaires
 
-const BASE_URL = 'http://192.168.100.36:3001';
+// Docker environment (for colleagues using Docker)
+const BASE_URL = 'http://192.168.1.7:3001';
+
+// Local development (for testing without Docker)
+// const BASE_URL = 'http://localhost:3001';
 
 export interface QuestionOption {
   label: string;
@@ -57,6 +61,21 @@ export interface SubmissionResult {
   result: RatingResult;
   sport: string;
   success: boolean;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  gender?: string;
+  dateOfBirth?: string;
+  createdAt: string;
+}
+
+export interface UserProfileUpdate {
+  name: string;
+  gender: 'male' | 'female';
+  dateOfBirth: string;
 }
 
 export class QuestionnaireAPI {
@@ -160,6 +179,58 @@ export class QuestionnaireAPI {
       return data;
     } catch (error) {
       console.error('Error fetching sport response:', error);
+      throw error;
+    }
+  }
+
+  async updateUserProfile(userId: string, profileData: UserProfileUpdate): Promise<{ user: UserProfile; success: boolean }> {
+    try {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
+      const headers = await this.getAuthHeaders();
+      
+      const response = await fetch(`${BASE_URL}/api/onboarding/profile/${userId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(profileData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to update profile: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  }
+
+  async getUserProfile(userId: string): Promise<{ user: UserProfile; success: boolean }> {
+    try {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
+      const headers = await this.getAuthHeaders();
+      
+      const response = await fetch(`${BASE_URL}/api/onboarding/profile/${userId}`, {
+        headers
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch profile: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
       throw error;
     }
   }

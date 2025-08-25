@@ -12,7 +12,11 @@ const getBaseUrl = () => {
 //     return "http://localhost:3001";
 //   } else {
 
-    return "http://192.168.100.36:3001"; 
+    // Docker environment (for colleagues using Docker)
+    return "http://192.168.1.7:3001"; 
+    
+    // Local development (for testing without Docker)
+    // return "http://localhost:3001";
 //   }
 };
 

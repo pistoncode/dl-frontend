@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useOnboarding } from '../OnboardingContext';
@@ -15,14 +16,18 @@ import { InputField, GenderSelector, DatePicker } from '@shared/components/forms
 import { BackgroundGradient } from '../components';
 import { LoadingSpinner } from '@shared/components/ui';
 import { validateFullName, validateGender, validateDateOfBirth } from '../utils/validation';
+import { questionnaireAPI } from '../services/api';
+import { useSession } from '../../../../lib/auth-client';
 
 const PersonalInfoScreen = () => {
   const { data, updateData, isLoading } = useOnboarding();
+  const { data: session } = useSession();
   const [formData, setFormData] = useState({
     fullName: data.fullName || '',
     gender: data.gender || null,
     dateOfBirth: data.dateOfBirth || null,
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   // Update context when form data changes
   useEffect(() => {
@@ -54,14 +59,44 @@ const PersonalInfoScreen = () => {
     return nameValidation.isValid && genderValidation.isValid && dobValidation.isValid;
   };
 
-  const handleNext = () => {
-    if (validateForm()) {
+  const handleNext = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    if (!session?.user?.id) {
+      Alert.alert('Error', 'Please log in to continue.');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Update local context first
       updateData({
         fullName: formData.fullName,
         gender: formData.gender,
         dateOfBirth: formData.dateOfBirth,
       });
+
+      // Save to backend database
+      await questionnaireAPI.updateUserProfile(session.user.id, {
+        name: formData.fullName.trim(),
+        gender: formData.gender as 'male' | 'female',
+        dateOfBirth: formData.dateOfBirth?.toISOString().split('T')[0] || '',
+      });
+
+      // Navigate to next screen on success
       router.push('/onboarding/location');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert(
+        'Error', 
+        'Failed to save your profile information. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -145,13 +180,15 @@ const PersonalInfoScreen = () => {
         <TouchableOpacity
           style={[
             styles.button,
-            (!formData.fullName || !formData.gender || !formData.dateOfBirth) &&
+            ((!formData.fullName || !formData.gender || !formData.dateOfBirth) || isSaving) &&
               styles.buttonDisabled,
           ]}
           onPress={handleNext}
-          disabled={!formData.fullName || !formData.gender || !formData.dateOfBirth}
+          disabled={!formData.fullName || !formData.gender || !formData.dateOfBirth || isSaving}
         >
-          <Text style={styles.buttonText}>Confirm</Text>
+          <Text style={styles.buttonText}>
+            {isSaving ? 'Saving...' : 'Confirm'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
