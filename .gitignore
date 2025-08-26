@@ -39,6 +39,6 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
-
+node_modules/
 package-lock.json
 package.json

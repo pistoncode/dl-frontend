@@ -22,13 +22,16 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignIn = async () => {
-    try {
-      console.log('Calling authClient.signIn.username...');
+    let data, error; // Declare variables in the outer scope
 
-      const { data, error } = await authClient.signIn.username({
-        username: username, 
-        password: password,
-      });
+    try {
+      console.log('Calling authClient.signIn...');
+
+      if (username.includes('@')) {
+        [data, error] = await handleSignInWithEmail();
+      } else {
+        [data, error] = await handleSignInWithUsername();
+      }
 
       if (error) {
         console.error('API Error:', error.message);
@@ -38,31 +41,38 @@ export default function LoginScreen() {
 
       if (data) {
         console.log('Sign-in call completed successfully.');
-          router.replace('/onboarding');
-          
-        } else {
-         router.replace('/');
-        }
+        router.replace('/onboarding');
+      } else {
+        // This case might be unreachable if your API always returns data on success
+        // or an error on failure. Worth verifying the API contract.
+        router.replace('/');
       }
-     catch (error) {
-      Alert.alert('Sign In Failed', error.message || 'Invalid credentials.');
+    } catch (err) { // It's good practice to name the catch variable
+      const message = err instanceof Error ? err.message : 'An unknown error occurred.';
+      Alert.alert('Sign In Failed', message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleForgotPassword = async () => {
-    // TODO: Implement forgot password logic
-    const { data, error } = await authClient.requestPasswordReset({
-      email: email, // required
-      redirectTo: "", //dummy url
-  });
-  if (error) {
-    console.error('Error sending reset password email:', error);
-    Alert.alert('Error', 'Failed to send reset password email');
-  } else {
-    Alert.alert('Forgot Password', 'Reset password email sent');
-  }
+  const handleSignInWithEmail = async () => {
+      const { data, error } = await authClient.signIn.email({
+        email: email,
+        password: password,
+      });
+      return [data, error];
+    }
+
+const handleSignInWithUsername = async () => {
+  const { data, error } = await authClient.signIn.username({
+          username: username, 
+          password: password,
+        });
+        return [data, error];
+      }
+      
+  const handleForgotPassword = () => {
+    router.push('/resetPassword');
   };
 
   const handleRegister = () => {
@@ -70,19 +80,31 @@ export default function LoginScreen() {
   };
 
   const handleFacebookLogin = async () => {
-    // TODO: Implement Facebook OAuth
-    const data = await authClient.signIn.social({
-      provider: "facebook"
-  })
+    try {
+      const { data, error } = await authClient.signIn.social({
+        provider: "facebook"
+      })
+      console.log(data, error);
+    } catch (error) {
+      console.error('Error signing in with Facebook:', error);
+    }
   };
 
   const handleGoogleLogin = async () => {
+    await authClient.signOut();
     console.log('Calling authClient.signIn.social...');
-    // TODO: Implement Google OAuth
-      const data = await authClient.signIn.social({
+    try {
+      const { data, error } = await authClient.signIn.social({
         provider: "google",
+        callbackURL: "deuceleague://onboarding",
       })
-      console.log(data);
+      
+      
+      console.log(data, error);
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+    }
+    
   };
 
   const dismissKeyboard = () => {

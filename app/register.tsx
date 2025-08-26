@@ -45,7 +45,14 @@ export default function RegisterScreen() {
       }
       if (data) {
         console.log('Sign up successful');
-        router.replace('/');
+        const { data: verificationData, error: verificationError } = await authClient.sendVerificationEmail({
+          email: email,
+        });
+        console.log('Verification email sent:', verificationData);
+        if (verificationError) {
+          console.error('Verification email error:', verificationError);
+        }
+        router.replace('/login');
       }
     } catch (error) {
       console.error('Sign up failed:', error);
