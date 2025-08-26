@@ -81,11 +81,25 @@ const AssessmentResultsScreen = () => {
 
   // Get the assessment results for the current sport
   const getAssessmentResults = () => {
-    const skillData = data.skillAssessments?.[sport as SportType];
+    console.log('🔍 Getting assessment results for sport:', sport);
+    console.log('🔍 All skill assessments:', data.skillAssessments);
     
-    if (skillData && typeof skillData === 'object') {
-      return skillData;
+    const skillData = data.skillAssessments?.[sport as SportType];
+    console.log('🔍 Skill data for current sport:', skillData);
+    
+    if (skillData && typeof skillData === 'string') {
+      try {
+        // Parse the JSON string to get the assessment data
+        const parsedData = JSON.parse(skillData);
+        console.log('🔍 Parsed skill data:', parsedData);
+        if (parsedData && typeof parsedData === 'object' && parsedData.rating) {
+          return parsedData;
+        }
+      } catch (error) {
+        console.error('Failed to parse skill data:', error);
+      }
     }
+    console.log('❌ No valid assessment results found');
     return null;
   };
 
