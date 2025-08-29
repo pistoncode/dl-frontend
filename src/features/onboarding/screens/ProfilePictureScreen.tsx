@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+
 import {
   View,
   Text,
@@ -54,6 +56,7 @@ const ProfilePictureScreen = () => {
   const handleSkip = () => {
     // Skip photo and navigate to main app
     Alert.alert('Success!', 'Onboarding completed! This would navigate to the main app.');
+    useRouter().push('/user-dashboard');
   };
 
   return (

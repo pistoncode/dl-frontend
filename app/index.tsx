@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -11,6 +11,9 @@ import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
   const router = useRouter();
+
+  
+ 
 
   const handleGetStarted = () => {
     router.push('/login');
