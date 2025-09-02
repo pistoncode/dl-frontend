@@ -4,16 +4,57 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useSession } from '@/lib/auth-client';
+import { getBackendBaseURL } from '@/config/network';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { data: session, isPending } = useSession();
 
-  
- 
+  const checkOnboardingStatus = async (userId: string) => {
+    try {
+      const backendUrl = getBackendBaseURL();
+      const response = await fetch(`${backendUrl}/api/onboarding/status/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.completedOnboarding;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      if (isPending) return; // Wait for session to load
+      
+      if (session?.user) {
+        console.log('User is authenticated, checking onboarding status');
+        const hasCompletedOnboarding = await checkOnboardingStatus(session.user.id);
+        
+        if (hasCompletedOnboarding) {
+          console.log('User has completed onboarding, redirecting to user dashboard');
+          router.replace('/user-dashboard');
+        } else {
+          console.log('User has not completed onboarding, redirecting to onboarding');
+          router.replace('/onboarding/personal-info');
+        }
+      }
+    };
+
+    checkAuthStatus();
+  }, [session, isPending, router]);
 
   const handleGetStarted = () => {
     router.push('/login');
@@ -44,7 +85,7 @@ export default function HomeScreen() {
           }}
           style={({ pressed }) => [
             styles.button,
-            { opacity: pressed ? 1 : 1 }
+            { opacity: pressed ? 0.8 : 1 }
           ]}
         >
           <ThemedText style={styles.buttonText}>Get Started</ThemedText>
