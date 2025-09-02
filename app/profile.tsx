@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@core/theme/theme';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { DropdownModal, WinRateCircle } from '@features/profile/components';
+import { DropdownModal, WinRateCircle, MatchDetailsModal } from '@features/profile/components';
 
 const { width } = Dimensions.get('window');
 
@@ -272,152 +272,6 @@ const EloProgressGraph = ({ data, onPointPress }) => {
   );
 };
 
-// Default Profile Icon Component (reused from match history)
-const DefaultProfileIcon = () => (
-  <View style={styles.profileIcon}>
-    <Svg width="16" height="16" viewBox="0 0 24 24">
-      <Path 
-        fill="#FFFFFF" 
-        fillRule="evenodd" 
-        d="M8 7a4 4 0 1 1 8 0a4 4 0 0 1-8 0m0 6a5 5 0 0 0-5 5a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3a5 5 0 0 0-5-5z" 
-        clipRule="evenodd" 
-      />
-    </Svg>
-  </View>
-);
-
-// Match Details Card Component (from match history)
-const MatchDetailsCard = ({ match, onClose }) => {
-  if (!match) return null;
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return '#34C759';
-      case 'ongoing':
-        return theme.colors.primary;
-      case 'upcoming':
-        return theme.colors.neutral.gray[500];
-      default:
-        return theme.colors.neutral.gray[500];
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'Completed';
-      case 'ongoing':
-        return 'Ongoing';
-      case 'upcoming':
-        return 'Upcoming';
-      default:
-        return status;
-    }
-  };
-
-  return (
-    <Modal
-      visible={true}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <View style={styles.modalContentLarge}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Match Details</Text>
-            <Pressable onPress={onClose} style={styles.modalCloseButton}>
-              <Ionicons name="close" size={24} color={theme.colors.neutral.gray[600]} />
-            </Pressable>
-          </View>
-          
-          <View style={styles.matchDetailsCard}>
-              {/* League Name with Container */}
-              <View style={styles.leagueNameContainer}>
-                <Text style={styles.leagueName}>{match.league}</Text>
-              </View>
-              
-              {/* Scoreboard */}
-              <View style={styles.scoreboardContainer}>
-                {/* Player Names Column with Profile Icons */}
-                <View style={styles.playerColumn}>
-                  <View style={styles.playerRow}>
-                    <DefaultProfileIcon />
-                    <Text style={styles.playerName}>{match.player1}</Text>
-                  </View>
-                  <View style={styles.playerRow}>
-                    <DefaultProfileIcon />
-                    <Text style={styles.playerName}>{match.player2}</Text>
-                  </View>
-                </View>
-                
-                {/* Set 1 */}
-                <View style={styles.setColumn}>
-                  <Text style={styles.setHeader}>Set 1</Text>
-                  <Text style={styles.score}>
-                    {match.scores.set1.player1 !== null ? match.scores.set1.player1 : '-'}
-                  </Text>
-                  <Text style={styles.score}>
-                    {match.scores.set1.player2 !== null ? match.scores.set1.player2 : '-'}
-                  </Text>
-                </View>
-                
-                {/* Set 2 */}
-                <View style={styles.setColumn}>
-                  <Text style={styles.setHeader}>Set 2</Text>
-                  <Text style={styles.score}>
-                    {match.scores.set2.player1 !== null ? match.scores.set2.player1 : '-'}
-                  </Text>
-                  <Text style={styles.score}>
-                    {match.scores.set2.player2 !== null ? match.scores.set2.player2 : '-'}
-                  </Text>
-                </View>
-                
-                {/* Set 3 */}
-                <View style={styles.setColumn}>
-                  <Text style={styles.setHeader}>Set 3</Text>
-                  <Text style={styles.score}>
-                    {match.scores.set3.player1 !== null ? match.scores.set3.player1 : '-'}
-                  </Text>
-                  <Text style={styles.score}>
-                    {match.scores.set3.player2 !== null ? match.scores.set3.player2 : '-'}
-                  </Text>
-                </View>
-              </View>
-              
-              {/* Divider */}
-              <View style={styles.divider} />
-              
-              {/* Bottom Section */}
-              <View style={styles.bottomSection}>
-                {/* Date and Time */}
-                <View style={styles.dateTimeContainer}>
-                  <Text style={styles.dateText}>{match.date}</Text>
-                  <Text style={styles.timeText}>{match.time}</Text>
-                </View>
-                
-                {/* Status */}
-                <View style={[styles.statusContainer, { backgroundColor: `${getStatusColor(match.status)}20` }]}>
-                  <Text style={[styles.statusText, { color: getStatusColor(match.status) }]}>
-                    {getStatusText(match.status)}
-                  </Text>
-                </View>
-              </View>
-              
-              {/* Rating Change Info */}
-              <View style={styles.ratingChangeSection}>
-                <Text style={styles.ratingChangeLabel}>Rating Change</Text>
-                <Text style={[styles.ratingChangeValue, { color: match.ratingChange > 0 ? '#34C759' : '#FF3B30' }]}>
-                  {match.ratingChange > 0 ? '+' : ''}{match.ratingChange} → {match.rating}
-                </Text>
-              </View>
-            </View>
-        </View>
-      </Pressable>
-    </Modal>
-  );
-};
 
 // Custom Edit Icon SVG Component
 const EditIcon = ({ color = '#4CAF50' }: { color?: string }) => (
@@ -782,7 +636,7 @@ export default function ProfileAdaptedScreen() {
       
       {/* Match Details Modal */}
       {modalVisible && selectedGame && (
-        <MatchDetailsCard
+        <MatchDetailsModal
           match={selectedGame}
           onClose={handleCloseModal}
         />
