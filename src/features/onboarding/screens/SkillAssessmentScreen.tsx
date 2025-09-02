@@ -17,6 +17,7 @@ import { PickleballQuestionnaire, Question, QuestionnaireResponse, SkillQuestion
 import { TennisQuestionnaire, TennisQuestion, TennisQuestionnaireResponse, TennisSkillQuestions } from '../services/TennisQuestionnaire';
 import { PadelQuestionnaire, PadelQuestion, PadelQuestionnaireResponse, PadelSkillQuestions } from '../services/PadelQuestionnaire';
 import { OptionButton, NumberInput, QuestionContainer, BackgroundGradient } from '../components';
+import { useSession } from '@/lib/auth-client';
 import type { SportType } from '../types';
 
 const ChevronDown = () => (
@@ -62,6 +63,7 @@ const PadelIcon = () => (
 const SkillAssessmentScreen = () => {
   const { sport, sportIndex } = useLocalSearchParams();
   const { data, updateData } = useOnboarding();
+  const session = useSession(); // Get session at component level
   const currentSportIndex = parseInt(sportIndex as string) || 0;
   const selectedSports = data.selectedSports || [];
   
@@ -131,23 +133,34 @@ const SkillAssessmentScreen = () => {
       
       // Check if there's already a completed assessment
       const existingSkillData = data.skillAssessments?.[sport as SportType];
-      if (existingSkillData && typeof existingSkillData === 'object') {
-        // There's a complete assessment already, use its data
-        const existingResponses = existingSkillData.responses || {};
-        setResponses(existingResponses);
-          
-        // If assessment is complete, show introduction for retake
-        if (existingSkillData.rating) {
+      if (existingSkillData && typeof existingSkillData === 'string') {
+        try {
+          const skillDataObject = JSON.parse(existingSkillData);
+          // There's a complete assessment already, use its data
+          const existingResponses = skillDataObject.responses || {};
+          setResponses(existingResponses);
+            
+          // If assessment is complete, show introduction for retake
+          if (skillDataObject.rating) {
+            setResponses({});
+            setSkillResponses({});
+            setCurrentQuestionIndex(0);
+            const initialQuestions = questionnaire.getConditionalQuestions({});
+            setQuestions(initialQuestions);
+          } else {
+            // Continue incomplete assessment
+            const nextQuestions = questionnaire.getConditionalQuestions(existingResponses);
+            setQuestions(nextQuestions);
+            setCurrentQuestionIndex(0);
+          }
+        } catch (error) {
+          console.error('Failed to parse existing skill data:', error);
+          // Start fresh if data is corrupted
           setResponses({});
           setSkillResponses({});
           setCurrentQuestionIndex(0);
           const initialQuestions = questionnaire.getConditionalQuestions({});
           setQuestions(initialQuestions);
-        } else {
-          // Continue incomplete assessment
-          const nextQuestions = questionnaire.getConditionalQuestions(existingResponses);
-          setQuestions(nextQuestions);
-          setCurrentQuestionIndex(0);
         }
       } else {
         // No existing data, start fresh
@@ -163,8 +176,9 @@ const SkillAssessmentScreen = () => {
       // Load saved skill level for other sports
       if (data.skillAssessments && data.skillAssessments[sport as SportType]) {
         const skillData = data.skillAssessments[sport as SportType];
-        if (skillData && typeof skillData === 'object' && skillData.confidence) {
-          setSelectedOption(skillData.confidence);
+        if (skillData && typeof skillData === 'string' && skillData !== 'answer_later') {
+          // Handle simple string skill levels
+          setSelectedOption(skillData);
         } else {
           setSelectedOption(null);
         }
@@ -294,81 +308,125 @@ const SkillAssessmentScreen = () => {
     }
   };
 
-  const completePickleballAssessment = (finalResponses: QuestionnaireResponse) => {
+  const completePickleballAssessment = async (finalResponses: QuestionnaireResponse) => {
     try {
+      // Calculate rating using existing logic (for immediate UI feedback)
       const ratingResult = pickleballQuestionnaire.calculateInitialRating(finalResponses);
       
-      // Store the complete responses and rating
+      // Store the complete responses and rating in context (for UI compatibility)
       const skillData = {
         responses: finalResponses,
         rating: ratingResult,
         feedback: pickleballQuestionnaire.generateFeedback(ratingResult)
       };
       
-      // Update context with skill data
       const updatedSkillLevels = {
         ...data.skillAssessments,
         [sport as SportType]: JSON.stringify(skillData)
       };
-      updateData({ skillAssessments: updatedSkillLevels });
+      await updateData({ skillAssessments: updatedSkillLevels });
+
+      // Save to backend
+      try {
+        await saveToBackend('pickleball', finalResponses);
+      } catch (backendError) {
+        console.warn('Failed to save to backend, but proceeding with local data:', backendError);
+      }
       
-      // Navigate to results page
-      router.push(`/onboarding/assessment-results?sport=${sport}&sportIndex=${currentSportIndex}`);
-    } catch {
+      // Wait a bit to ensure context is updated before navigation
+      setTimeout(() => {
+        router.push(`/onboarding/assessment-results?sport=${sport}&sportIndex=${currentSportIndex}`);
+      }, 100);
+    } catch (error) {
+      console.error('Error in completePickleballAssessment:', error);
       Alert.alert('Error', 'There was an issue calculating your rating. Using default assessment.');
       proceedToNext();
     }
   };
 
-  const completeTennisAssessment = (finalResponses: TennisQuestionnaireResponse) => {
+  const completeTennisAssessment = async (finalResponses: TennisQuestionnaireResponse) => {
     try {
+      // Calculate rating using existing logic
       const ratingResult = tennisQuestionnaire.calculateInitialRating(finalResponses);
       
-      // Store the complete responses and rating
       const skillData = {
         responses: finalResponses,
         rating: ratingResult,
         feedback: tennisQuestionnaire.generateFeedback(ratingResult)
       };
       
-      // Update context with skill data
       const updatedSkillLevels = {
         ...data.skillAssessments,
         [sport as SportType]: JSON.stringify(skillData)
       };
-      updateData({ skillAssessments: updatedSkillLevels });
+      await updateData({ skillAssessments: updatedSkillLevels });
+
+      // Save to backend
+      try {
+        await saveToBackend('tennis', finalResponses);
+      } catch (backendError) {
+        console.warn('Failed to save to backend, but proceeding with local data:', backendError);
+      }
       
-      // Navigate to results page
-      router.push(`/onboarding/assessment-results?sport=${sport}&sportIndex=${currentSportIndex}`);
-    } catch {
+      // Wait a bit to ensure context is updated before navigation
+      setTimeout(() => {
+        router.push(`/onboarding/assessment-results?sport=${sport}&sportIndex=${currentSportIndex}`);
+      }, 100);
+    } catch (error) {
+      console.error('Error in completeTennisAssessment:', error);
       Alert.alert('Error', 'There was an issue calculating your rating. Using default assessment.');
       proceedToNext();
     }
   };
 
-  const completePadelAssessment = (finalResponses: PadelQuestionnaireResponse) => {
+  const completePadelAssessment = async (finalResponses: PadelQuestionnaireResponse) => {
     try {
+      // Calculate rating using existing logic
       const ratingResult = padelQuestionnaire.calculateInitialRating(finalResponses);
       
-      // Store the complete responses and rating
       const skillData = {
         responses: finalResponses,
         rating: ratingResult,
         feedback: padelQuestionnaire.generateFeedback(ratingResult)
       };
       
-      // Update context with skill data
       const updatedSkillLevels = {
         ...data.skillAssessments,
         [sport as SportType]: JSON.stringify(skillData)
       };
-      updateData({ skillAssessments: updatedSkillLevels });
+      await updateData({ skillAssessments: updatedSkillLevels });
+
+      // Save to backend
+      try {
+        await saveToBackend('padel', finalResponses);
+      } catch (backendError) {
+        console.warn('Failed to save to backend, but proceeding with local data:', backendError);
+      }
       
-      // Navigate to results page
-      router.push(`/onboarding/assessment-results?sport=${sport}&sportIndex=${currentSportIndex}`);
-    } catch {
+      // Wait a bit to ensure context is updated before navigation
+      setTimeout(() => {
+        router.push(`/onboarding/assessment-results?sport=${sport}&sportIndex=${currentSportIndex}`);
+      }, 100);
+    } catch (error) {
+      console.error('Error in completePadelAssessment:', error);
       Alert.alert('Error', 'There was an issue calculating your rating. Using default assessment.');
       proceedToNext();
+    }
+  };
+
+  // Helper function to save responses to backend
+  const saveToBackend = async (sportName: string, responses: any) => {
+    try {
+      if (!session.data?.user?.id) {
+        throw new Error('User not authenticated');
+      }
+      
+      const { questionnaireAdapter } = await import('../services/adapter');
+      await questionnaireAdapter.saveQuestionnaireResponse(sportName, responses, session.data.user.id);
+      console.log(`Successfully saved ${sportName} responses to backend`);
+    } catch (error) {
+      console.error(`Failed to save ${sportName} responses to backend:`, error);
+      throw error;
     }
   };
 
@@ -418,7 +476,7 @@ const SkillAssessmentScreen = () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isComprehensiveQuestionnaire) {
       // Process current page answers and move to next question/page
       const currentPageData = {
@@ -454,11 +512,11 @@ const SkillAssessmentScreen = () => {
       if (nextQuestions.length === 0) {
         // Questionnaire complete, calculate rating
         if (currentQuestionnaireType === 'pickleball') {
-          completePickleballAssessment(newResponses as QuestionnaireResponse);
+          await completePickleballAssessment(newResponses as QuestionnaireResponse);
         } else if (currentQuestionnaireType === 'tennis') {
-          completeTennisAssessment(newResponses as TennisQuestionnaireResponse);
+          await completeTennisAssessment(newResponses as TennisQuestionnaireResponse);
         } else {
-          completePadelAssessment(newResponses as PadelQuestionnaireResponse);
+          await completePadelAssessment(newResponses as PadelQuestionnaireResponse);
         }
       } else {
         // Move to next page
@@ -474,6 +532,14 @@ const SkillAssessmentScreen = () => {
           [sport as SportType]: selectedOption
         };
         updateData({ skillAssessments: updatedSkillLevels });
+
+        // Save simple skill level to backend
+        try {
+          await saveToBackend(sport as string, { skill_level: selectedOption });
+        } catch (backendError) {
+          console.warn('Failed to save skill level to backend:', backendError);
+        }
+
         proceedToNext();
       }
     }

@@ -88,6 +88,7 @@ const GameSelectScreen = () => {
           disabled={selectedSports.length === 0}
           onPress={() => {
             if (selectedSports.length > 0) {
+              // Always start with the first selected sport (first in order)
               router.push(`/onboarding/skill-assessment?sport=${selectedSports[0]}&sportIndex=0`);
             }
           }}
