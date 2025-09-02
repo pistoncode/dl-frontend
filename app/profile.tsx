@@ -17,116 +17,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@core/theme/theme';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { DropdownModal, WinRateCircle, MatchDetailsModal, EloProgressGraph, EditIcon, MatchHistoryButton, AchievementIcon } from '@features/profile/components';
+import { DropdownModal, WinRateCircle, MatchDetailsModal, EloProgressGraph, EditIcon, MatchHistoryButton, AchievementIcon } from '../src/features/profile/components';
+import type { GameData, UserData } from '../src/features/profile/types';
+import { mockEloData, userData, gameTypeOptions } from '../src/features/profile/data/mockData';
+import { useProfileState } from '../src/features/profile/hooks/useProfileState';
+import { useProfileHandlers } from '../src/features/profile/hooks/useProfileHandlers';
 
 const { width } = Dimensions.get('window');
 
-// Mock ELO data for the last 6 months with full match details
-type GameData = {
-  date: string;
-  time: string;
-  rating: number;
-  opponent: string;
-  result: 'W' | 'L';
-  score: string;
-  ratingChange: number;
-  league: string;
-  player1: string;
-  player2: string;
-  scores: {
-    set1: { player1: number | null; player2: number | null };
-    set2: { player1: number | null; player2: number | null };
-    set3: { player1: number | null; player2: number | null };
-  };
-  status: 'completed' | 'ongoing' | 'upcoming';
-};
+const CURVE_CONFIG = {
+  HEIGHT: 200,
+  DEPTH: 0,
+  START_Y: 130,
+} as const;
 
-const mockEloData: GameData[] = [
-  { 
-    date: 'Mar 1, 2024', time: '10:00 AM', rating: 1350, opponent: 'John D.', result: 'W', 
-    score: '6-4, 6-3', ratingChange: +25, league: 'Sepang Club League',
-    player1: 'Ken', player2: 'John D.',
-    scores: { set1: { player1: 6, player2: 4 }, set2: { player1: 6, player2: 3 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-  { 
-    date: 'Mar 15, 2024', time: '2:30 PM', rating: 1375, opponent: 'Sarah M.', result: 'W', 
-    score: '7-5, 6-4', ratingChange: +30, league: 'KL Open Tournament',
-    player1: 'Ken', player2: 'Sarah M.',
-    scores: { set1: { player1: 7, player2: 5 }, set2: { player1: 6, player2: 4 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-  { 
-    date: 'Apr 2, 2024', time: '4:00 PM', rating: 1405, opponent: 'Mike R.', result: 'L', 
-    score: '4-6, 5-7', ratingChange: -20, league: 'Petaling Jaya Singles League',
-    player1: 'Ken', player2: 'Mike R.',
-    scores: { set1: { player1: 4, player2: 6 }, set2: { player1: 5, player2: 7 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-  { 
-    date: 'Apr 20, 2024', time: '9:00 AM', rating: 1385, opponent: 'Emma L.', result: 'W', 
-    score: '6-3, 6-2', ratingChange: +35, league: 'Selangor Championship',
-    player1: 'Ken', player2: 'Emma L.',
-    scores: { set1: { player1: 6, player2: 3 }, set2: { player1: 6, player2: 2 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-  { 
-    date: 'May 5, 2024', time: '11:00 AM', rating: 1420, opponent: 'David K.', result: 'W', 
-    score: '6-4, 7-6', ratingChange: +15, league: 'Club Tournament',
-    player1: 'Ken', player2: 'David K.',
-    scores: { set1: { player1: 6, player2: 4 }, set2: { player1: 7, player2: 6 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-  { 
-    date: 'May 18, 2024', time: '3:00 PM', rating: 1435, opponent: 'Lisa P.', result: 'L', 
-    score: '3-6, 4-6', ratingChange: -25, league: 'Weekend League',
-    player1: 'Ken', player2: 'Lisa P.',
-    scores: { set1: { player1: 3, player2: 6 }, set2: { player1: 4, player2: 6 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-  { 
-    date: 'Jun 1, 2024', time: '10:30 AM', rating: 1410, opponent: 'Tom H.', result: 'W', 
-    score: '6-2, 6-4', ratingChange: +30, league: 'Sepang Club League',
-    player1: 'Ken', player2: 'Tom H.',
-    scores: { set1: { player1: 6, player2: 2 }, set2: { player1: 6, player2: 4 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-  { 
-    date: 'Jun 15, 2024', time: '5:00 PM', rating: 1440, opponent: 'Amy S.', result: 'W', 
-    score: '7-5, 6-3', ratingChange: +20, league: 'KL Open Tournament',
-    player1: 'Ken', player2: 'Amy S.',
-    scores: { set1: { player1: 7, player2: 5 }, set2: { player1: 6, player2: 3 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-  { 
-    date: 'Jul 3, 2024', time: '1:00 PM', rating: 1460, opponent: 'Chris B.', result: 'L', 
-    score: '5-7, 4-6', ratingChange: -15, league: 'Mid-Year Championship',
-    player1: 'Ken', player2: 'Chris B.',
-    scores: { set1: { player1: 5, player2: 7 }, set2: { player1: 4, player2: 6 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-  { 
-    date: 'Jul 20, 2024', time: '9:30 AM', rating: 1445, opponent: 'Nina T.', result: 'W', 
-    score: '6-4, 6-3', ratingChange: +25, league: 'Petaling Jaya Singles League',
-    player1: 'Ken', player2: 'Nina T.',
-    scores: { set1: { player1: 6, player2: 4 }, set2: { player1: 6, player2: 3 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-  { 
-    date: 'Aug 5, 2024', time: '2:00 PM', rating: 1470, opponent: 'Mark J.', result: 'L', 
-    score: '4-6, 3-6', ratingChange: -30, league: 'Summer Cup',
-    player1: 'Ken', player2: 'Mark J.',
-    scores: { set1: { player1: 4, player2: 6 }, set2: { player1: 3, player2: 6 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-  { 
-    date: 'Aug 20, 2024', time: '11:30 AM', rating: 1440, opponent: 'Rachel G.', result: 'W', 
-    score: '6-3, 7-5', ratingChange: +10, league: 'Sepang Club League',
-    player1: 'Ken', player2: 'Rachel G.',
-    scores: { set1: { player1: 6, player2: 3 }, set2: { player1: 7, player2: 5 }, set3: { player1: null, player2: null } },
-    status: 'completed'
-  },
-];
+const SPORT_COLORS = {
+  Tennis: '#354a33',
+  Pickleball: '#512f48', 
+  Padel: '#af7e04',
+} as const;
+
+const generateCurvePath = (width: number): string => {
+  const { HEIGHT, DEPTH, START_Y } = CURVE_CONFIG;
+  return `M0,${HEIGHT} L0,${START_Y} Q${width/2},${DEPTH} ${width},${START_Y} L${width},${START_Y} L${width},${HEIGHT} Z`;
+};
 
 // ELO Progress Graph Component
 
@@ -136,69 +50,40 @@ const mockEloData: GameData[] = [
 
 
 export default function ProfileAdaptedScreen() {
-  // CONCAVITY CONTROLS - Adjust these numbers to change the curve
-  const CURVE_HEIGHT = 200;        // Total height of the curve area
-  const CURVE_DEPTH = 0;          // How deep the curve goes (higher = more concave)
-  const CURVE_START_Y = 130;       // Where the curve starts from bottom
-  
-  const [activeTab, setActiveTab] = useState('Tennis');
-  const [selectedGame, setSelectedGame] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  
-  // Dropdown states
-  const [eloDropdownVisible, setEloDropdownVisible] = useState(false);
-  const [leagueDropdownVisible, setLeagueDropdownVisible] = useState(false);
-  const [selectedGameType, setSelectedGameType] = useState('Singles');
-  
-  const gameTypeOptions = ['Singles', 'Doubles'];
-  const [userData] = useState({
-    name: 'Kenneth Riadi',
-    username: 'Ken',
-    bio: 'Tennis enthusiast, weekend warrior, always up for a good match!',
-    location: 'Sepang, Selangor',
-    gender: 'Male',
-    profilePicture: 'https://i.pravatar.cc/150?img=3',
-    skillLevel: 'Intermediate',
-    achievements: [
-      { id: '1', title: 'Founding Member', icon: 'shield-checkmark' },
-      { id: '2', title: 'Division Winner', year: '2024', icon: 'trophy' },
-    ],
-    sports: ['Tennis', 'Pickleball', 'Padel'],
-    activeSports: ['Tennis', 'Pickleball', 'Padel'], // Currently active sports
+  const {
+    activeTab,
+    selectedGame,
+    modalVisible,
+    eloDropdownVisible,
+    leagueDropdownVisible,
+    selectedGameType,
+    setActiveTab,
+    setSelectedGame,
+    setModalVisible,
+    setEloDropdownVisible,
+    setLeagueDropdownVisible,
+    setSelectedGameType,
+  } = useProfileState();
+
+  const {
+    handleSettingsPress,
+    handleEditPress,
+    handleGameTypeSelect,
+    handleLeagueSelect,
+    handleTabPress,
+    handleGamePointPress,
+    handleModalClose,
+    handleMatchHistoryPress,
+  } = useProfileHandlers({
+    setEloDropdownVisible,
+    setLeagueDropdownVisible,
+    setSelectedGameType,
+    setActiveTab,
+    setSelectedGame,
+    setModalVisible,
   });
-
-  const handleSettingsPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/settings');
-  };
-
-  const handleEditPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/edit-profile');
-  };
-
-  const handleTabPress = (tab: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setActiveTab(tab);
-  };
-
-  const handleGamePointPress = (game) => {
-    setSelectedGame(game);
-    setModalVisible(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalVisible(false);
-    setTimeout(() => setSelectedGame(null), 300);
-  };
-
-  // Dropdown handlers
-  const handleGameTypeSelect = (gameType: string) => {
-    setSelectedGameType(gameType);
-    setEloDropdownVisible(false);
-    setLeagueDropdownVisible(false);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
+  
+  // Using imported userData and gameTypeOptions from mockData
 
 
   return (
@@ -229,13 +114,13 @@ export default function ProfileAdaptedScreen() {
             
             {/* Concave curve at bottom of orange header - ADJUSTABLE CONCAVITY */}
             <Svg
-              height={CURVE_HEIGHT}
+              height={CURVE_CONFIG.HEIGHT}
               width={width}
-              viewBox={`0 0 ${width} ${CURVE_HEIGHT}`}
+              viewBox={`0 0 ${width} ${CURVE_CONFIG.HEIGHT}`}
               style={styles.concaveCurve}
             >
               <Path
-                d={`M0,${CURVE_HEIGHT} L0,${CURVE_START_Y} Q${width/2},${CURVE_DEPTH} ${width},${CURVE_START_Y} L${width},${CURVE_START_Y} L${width},${CURVE_HEIGHT} Z`}
+                d={generateCurvePath(width)}
                 fill="#f0f0f0"
               />
             </Svg>
@@ -300,11 +185,6 @@ export default function ProfileAdaptedScreen() {
           <View style={styles.sportsPills}>
             {userData.sports.map((sport) => {
               const isActive = userData.activeSports.includes(sport);
-              const sportColors = {
-                Tennis: '#354a33',
-                Pickleball: '#512f48', 
-                Padel: '#af7e04',
-              };
               
               return (
                 <Pressable 
@@ -312,7 +192,7 @@ export default function ProfileAdaptedScreen() {
                   style={[
                     styles.sportPill,
                     { 
-                      backgroundColor: sportColors[sport as keyof typeof sportColors],
+                      backgroundColor: SPORT_COLORS[sport as keyof typeof SPORT_COLORS],
                       opacity: isActive ? 1 : 0.6,
                     }
                   ]}
@@ -478,7 +358,7 @@ export default function ProfileAdaptedScreen() {
       {modalVisible && selectedGame && (
         <MatchDetailsModal
           match={selectedGame}
-          onClose={handleCloseModal}
+          onClose={handleModalClose}
         />
       )}
       
