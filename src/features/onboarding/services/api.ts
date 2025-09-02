@@ -85,7 +85,7 @@ export class QuestionnaireAPI {
 
   async getQuestionnaire(sport: string): Promise<QuestionnaireData> {
     try {
-      const response = await fetch(`${BASE_URL}/onboarding/${sport}/questions`);
+      const response = await fetch(`${BASE_URL}/api/onboarding/${sport}/questions`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch questionnaire: ${response.statusText}`);
@@ -107,7 +107,7 @@ export class QuestionnaireAPI {
 
       const headers = await this.getAuthHeaders();
       
-      const response = await fetch(`${BASE_URL}/onboarding/${sport}/submit`, {
+      const response = await fetch(`${BASE_URL}/api/onboarding/${sport}/submit`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -136,7 +136,7 @@ export class QuestionnaireAPI {
 
       const headers = await this.getAuthHeaders();
       
-      const response = await fetch(`${BASE_URL}/onboarding/responses/${userId}`, {
+      const response = await fetch(`${BASE_URL}/api/onboarding/responses/${userId}`, {
         headers
       });
       
@@ -160,7 +160,7 @@ export class QuestionnaireAPI {
 
       const headers = await this.getAuthHeaders();
       
-      const response = await fetch(`${BASE_URL}/onboarding/responses/${userId}/${sport}`, {
+      const response = await fetch(`${BASE_URL}/api/onboarding/responses/${userId}/${sport}`, {
         headers
       });
       
@@ -215,7 +215,7 @@ export class QuestionnaireAPI {
 
       const headers = await this.getAuthHeaders();
       
-      const response = await fetch(`${BASE_URL}/onboarding/profile/${userId}`, {
+      const response = await fetch(`${BASE_URL}/api/onboarding/profile/${userId}`, {
         headers
       });
       
