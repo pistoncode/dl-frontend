@@ -39,3 +39,30 @@ export interface EloProgressGraphProps {
   data: GameData[];
   onPointPress: (game: GameData) => void;
 }
+
+export interface LeagueStatsProps {
+  skillLevel: string;
+  selectedGameType: string;
+  eloData: GameData[];
+  winRate: number;
+  onEloDropdownPress: () => void;
+  onLeagueDropdownPress: () => void;
+  onGamePointPress: (game: GameData) => void;
+}
+
+export interface UserData {
+  name: string;
+  username: string;
+  bio: string;
+  location: string;
+  gender: string;
+  skillLevel: string;
+  sports: string[];
+  activeSports: string[];
+  achievements: Array<{
+    id: string;
+    title: string;
+    icon: string;
+    year?: string;
+  }>;
+}
