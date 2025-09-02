@@ -25,6 +25,10 @@ export default function RootLayout() {
         <Stack.Screen name="register" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="user-dashboard" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
+        <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="match-history" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
