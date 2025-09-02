@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { authClient } from '@/lib/auth-client';
+import { getBackendBaseURL } from '@/config/network';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -21,7 +22,29 @@ export default function LoginScreen() {
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const checkOnboardingStatus = async (userId: string) => {
+    try {
+      const backendUrl = getBackendBaseURL();
+      const response = await fetch(`${backendUrl}/api/onboarding/status/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.completedOnboarding;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      return false; // Default to not completed on error
+    }
+  };
+
   const handleSignIn = async () => {
+    setIsLoading(true);
     try {
       console.log('Calling authClient.signIn.username...');
 
@@ -38,13 +61,22 @@ export default function LoginScreen() {
 
       if (data) {
         console.log('Sign-in call completed successfully.');
-          router.replace('/onboarding');
-          
+        
+        // Check if user has completed onboarding
+        const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
+        
+        if (hasCompletedOnboarding) {
+          console.log('User has completed onboarding, redirecting to user dashboard');
+          router.replace('/user-dashboard');
         } else {
-         router.replace('/');
+          console.log('User has not completed onboarding, redirecting to onboarding');
+          router.replace('/onboarding/personal-info');
         }
+      } else {
+        router.replace('/');
       }
-     catch (error) {
+    } catch (error) {
+      console.error('Sign In Error:', error);
       Alert.alert('Sign In Failed', error.message || 'Invalid credentials.');
     } finally {
       setIsLoading(false);
@@ -70,19 +102,68 @@ export default function LoginScreen() {
   };
 
   const handleFacebookLogin = async () => {
-    // TODO: Implement Facebook OAuth
-    const data = await authClient.signIn.social({
-      provider: "facebook"
-  })
+    setIsLoading(true);
+    try {
+      const { data, error } = await authClient.signIn.social({
+        provider: "facebook"
+      });
+      
+      if (error) {
+        console.error('Facebook login error:', error);
+        Alert.alert('Login Failed', 'Facebook login failed');
+        return;
+      }
+
+      if (data?.user) {
+        const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
+        
+        if (hasCompletedOnboarding) {
+          console.log('User has completed onboarding, redirecting to user dashboard');
+          router.replace('/user-dashboard');
+        } else {
+          console.log('User has not completed onboarding, redirecting to onboarding');
+          router.replace('/onboarding/personal-info');
+        }
+      }
+    } catch (error) {
+      console.error('Facebook login error:', error);
+      Alert.alert('Login Failed', 'Facebook login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleLogin = async () => {
-    console.log('Calling authClient.signIn.social...');
-    // TODO: Implement Google OAuth
-      const data = await authClient.signIn.social({
+    setIsLoading(true);
+    try {
+      console.log('Calling authClient.signIn.social...');
+      const { data, error } = await authClient.signIn.social({
         provider: "google",
-      })
-      console.log(data);
+      });
+      
+      if (error) {
+        console.error('Google login error:', error);
+        Alert.alert('Login Failed', 'Google login failed');
+        return;
+      }
+
+      if (data?.user) {
+        const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
+        
+        if (hasCompletedOnboarding) {
+          console.log('User has completed onboarding, redirecting to user dashboard');
+          router.replace('/user-dashboard');
+        } else {
+          console.log('User has not completed onboarding, redirecting to onboarding');
+          router.replace('/onboarding/personal-info');
+        }
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      Alert.alert('Login Failed', 'Google login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const dismissKeyboard = () => {
