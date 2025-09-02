@@ -39,7 +39,7 @@ export default function DashboardScreen() {
              <Text style={styles.logoText}>DEUCE</Text>
              <View style={styles.profilePicture}>
                <Image 
-                 source={require('@/assets/images/profile-avatar.png')}
+                 source={require('@/assets/images/nickdl.jpeg')}
                  style={styles.profileImage}
                />
              </View>
