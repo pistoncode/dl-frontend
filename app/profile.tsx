@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@core/theme/theme';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { DropdownModal, WinRateCircle, MatchDetailsModal, EloProgressGraph } from '@features/profile/components';
+import { DropdownModal, WinRateCircle, MatchDetailsModal, EloProgressGraph, EditIcon, MatchHistoryButton } from '@features/profile/components';
 
 const { width } = Dimensions.get('window');
 
@@ -132,14 +132,6 @@ const mockEloData: GameData[] = [
 
 
 // Custom Edit Icon SVG Component
-const EditIcon = ({ color = '#4CAF50' }: { color?: string }) => (
-  <Svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-      fill={color}
-    />
-  </Svg>
-);
 
 
 
@@ -246,7 +238,7 @@ export default function ProfileAdaptedScreen() {
               style={styles.concaveCurve}
             >
               <Path
-                d={`M0,${CURVE_HEIGHT} L0,${CURVE_START_Y} Q${width/2},${CURVE_DEPTH} ${width},${CURVE_START_Y} L${width},${CURVE_HEIGHT} Z`}
+                d={`M0,${CURVE_HEIGHT} L0,${CURVE_START_Y} Q${width/2},${CURVE_DEPTH} ${width},${CURVE_START_Y} L${width},${CURVE_START_Y} L${width},${CURVE_HEIGHT} Z`}
                 fill="#f0f0f0"
               />
             </Svg>
@@ -442,19 +434,12 @@ export default function ProfileAdaptedScreen() {
             </View>
           </View>
 
-          {/* View Match History */}
-          <View style={styles.skillLevelSection}>
-            <Pressable 
-              style={styles.matchHistoryContainer}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/match-history');
-              }}
-            >
-              <Text style={styles.matchHistoryText}>View Match History</Text>
-              <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} />
-            </Pressable>
-          </View>
+          <MatchHistoryButton
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/match-history');
+            }}
+          />
 
           {/* League Stats Section */}
           <View style={styles.skillLevelSection}>
@@ -584,21 +569,11 @@ const styles = StyleSheet.create({
   avatar: {
     width: 100,  // 3/4 of 120
     height: 100, // 3/4 of 120
-    borderRadius: 90, // Half of 90
+    borderRadius: 50, // Half of 100 to make it perfectly circular
     backgroundColor: '#e7e7e7', // Avatar background color
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: theme.colors.neutral.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    // Removed shadow styling
   },
   editIcon: {
     position: 'absolute',
