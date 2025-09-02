@@ -1,0 +1,471 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
+import { theme } from '@core/theme/theme';
+import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+
+// Default Profile Icon Component (reused from profile)
+const DefaultProfileIcon = () => (
+  <View style={styles.profileIcon}>
+    <Svg width="20" height="20" viewBox="0 0 24 24">
+      <Path 
+        fill="#FFFFFF" 
+        fillRule="evenodd" 
+        d="M8 7a4 4 0 1 1 8 0a4 4 0 0 1-8 0m0 6a5 5 0 0 0-5 5a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3a5 5 0 0 0-5-5z" 
+        clipRule="evenodd" 
+      />
+    </Svg>
+  </View>
+);
+
+
+// Mock match data
+const mockMatches = [
+  {
+    id: '1',
+    league: 'Petaling Jaya Singles League',
+    player1: 'Alex',
+    player2: 'Ken',
+    scores: {
+      set1: { player1: 6, player2: 4 },
+      set2: { player1: 7, player2: 5 },
+      set3: { player1: null, player2: null },
+    },
+    date: 'Dec 15, 2024',
+    time: '10:00 AM',
+    status: 'completed',
+  },
+  {
+    id: '2',
+    league: 'KL Open Tournament',
+    player1: 'Ken',
+    player2: 'Sarah',
+    scores: {
+      set1: { player1: 4, player2: 6 },
+      set2: { player1: 6, player2: 3 },
+      set3: { player1: 7, player2: 6 },
+    },
+    date: 'Dec 10, 2024',
+    time: '2:30 PM',
+    status: 'completed',
+  },
+  {
+    id: '3',
+    league: 'Selangor Doubles Championship',
+    player1: 'Ken & Mike',
+    player2: 'Tom & Lisa',
+    scores: {
+      set1: { player1: 6, player2: 3 },
+      set2: { player1: 5, player2: 7 },
+      set3: { player1: 4, player2: 2 },
+    },
+    date: 'Dec 8, 2024',
+    time: '4:00 PM',
+    status: 'ongoing',
+  },
+  {
+    id: '4',
+    league: 'Sepang Club League',
+    player1: 'Ken',
+    player2: 'David',
+    scores: {
+      set1: { player1: 6, player2: 2 },
+      set2: { player1: 6, player2: 4 },
+      set3: { player1: null, player2: null },
+    },
+    date: 'Dec 5, 2024',
+    time: '9:00 AM',
+    status: 'completed',
+  },
+];
+
+const MatchCard = ({ match }) => {
+  // Determine winner based on sets won
+  const getWinner = () => {
+    if (match.status !== 'completed') return null;
+    
+    let player1Sets = 0;
+    let player2Sets = 0;
+    
+    // Count sets won
+    if (match.scores.set1.player1 > match.scores.set1.player2) player1Sets++;
+    else if (match.scores.set1.player2 > match.scores.set1.player1) player2Sets++;
+    
+    if (match.scores.set2.player1 > match.scores.set2.player2) player1Sets++;
+    else if (match.scores.set2.player2 > match.scores.set2.player1) player2Sets++;
+    
+    if (match.scores.set3.player1 !== null && match.scores.set3.player2 !== null) {
+      if (match.scores.set3.player1 > match.scores.set3.player2) player1Sets++;
+      else if (match.scores.set3.player2 > match.scores.set3.player1) player2Sets++;
+    }
+    
+    if (player1Sets > player2Sets) return 'player1';
+    if (player2Sets > player1Sets) return 'player2';
+    return null; // Draw or incomplete
+  };
+  
+  const winner = getWinner();
+  const getStatusBackgroundColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return '#eeeeee';
+      case 'ongoing':
+        return `${theme.colors.primary}20`;
+      case 'upcoming':
+        return `${theme.colors.neutral.gray[500]}20`;
+      default:
+        return `${theme.colors.neutral.gray[500]}20`;
+    }
+  };
+
+  const getStatusTextColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return '#fda04d';
+      case 'ongoing':
+        return theme.colors.primary;
+      case 'upcoming':
+        return theme.colors.neutral.gray[500];
+      default:
+        return theme.colors.neutral.gray[500];
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'Completed';
+      case 'ongoing':
+        return 'Ongoing';
+      case 'upcoming':
+        return 'Upcoming';
+      default:
+        return status;
+    }
+  };
+
+  return (
+    <Pressable 
+      style={styles.matchCard}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        // Navigate to match details
+      }}
+    >
+      {/* League Name with Container */}
+      <View style={styles.leagueNameContainer}>
+        <Text style={styles.leagueName}>{match.league}</Text>
+      </View>
+      
+      {/* Scoreboard */}
+      <View style={styles.scoreboardContainer}>
+        {/* Player Names Column with Profile Icons */}
+        <View style={styles.playerColumn}>
+          <View style={styles.playerRow}>
+            <DefaultProfileIcon />
+            <Text style={[styles.playerName, winner === 'player1' && styles.winnerText]}>{match.player1}</Text>
+          </View>
+          <View style={styles.playerRow}>
+            <DefaultProfileIcon />
+            <Text style={[styles.playerName, winner === 'player2' && styles.winnerText]}>{match.player2}</Text>
+          </View>
+        </View>
+        
+        {/* Set 1 */}
+        <View style={styles.setColumn}>
+          <Text style={styles.setHeader}>Set 1</Text>
+          <View style={styles.scoreContainer}>
+            <Text style={[styles.score, winner === 'player1' && styles.winnerText]}>
+              {match.scores.set1.player1 !== null ? match.scores.set1.player1 : '-'}
+            </Text>
+          </View>
+          <View style={styles.scoreContainer}>
+            <Text style={[styles.score, winner === 'player2' && styles.winnerText]}>
+              {match.scores.set1.player2 !== null ? match.scores.set1.player2 : '-'}
+            </Text>
+          </View>
+        </View>
+        
+        {/* Set 2 */}
+        <View style={styles.setColumn}>
+          <Text style={styles.setHeader}>Set 2</Text>
+          <View style={styles.scoreContainer}>
+            <Text style={[styles.score, winner === 'player1' && styles.winnerText]}>
+              {match.scores.set2.player1 !== null ? match.scores.set2.player1 : '-'}
+            </Text>
+          </View>
+          <View style={styles.scoreContainer}>
+            <Text style={[styles.score, winner === 'player2' && styles.winnerText]}>
+              {match.scores.set2.player2 !== null ? match.scores.set2.player2 : '-'}
+            </Text>
+          </View>
+        </View>
+        
+        {/* Set 3 */}
+        <View style={styles.setColumn}>
+          <Text style={styles.setHeader}>Set 3</Text>
+          <View style={styles.scoreContainer}>
+            <Text style={[styles.score, winner === 'player1' && styles.winnerText]}>
+              {match.scores.set3.player1 !== null ? match.scores.set3.player1 : '-'}
+            </Text>
+          </View>
+          <View style={styles.scoreContainer}>
+            <Text style={[styles.score, winner === 'player2' && styles.winnerText]}>
+              {match.scores.set3.player2 !== null ? match.scores.set3.player2 : '-'}
+            </Text>
+          </View>
+        </View>
+      </View>
+      
+      {/* Divider */}
+      <View style={styles.divider} />
+      
+      {/* Bottom Section */}
+      <View style={styles.bottomSection}>
+        {/* Date and Time */}
+        <View style={styles.dateTimeContainer}>
+          <Text style={styles.dateText}>{match.date}</Text>
+          <Text style={styles.timeText}>{match.time}</Text>
+        </View>
+        
+        {/* Status */}
+        <View style={[styles.statusContainer, { backgroundColor: getStatusBackgroundColor(match.status) }]}>
+          <Text style={[styles.statusText, { color: getStatusTextColor(match.status), fontWeight: (match.status === 'completed' || match.status === 'ongoing') ? 'bold' : 'normal' }]}>
+            {getStatusText(match.status)}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+};
+
+export default function MatchHistoryScreen() {
+  const handleBackPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.back();
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* Orange Header */}
+      <LinearGradient
+        colors={[theme.colors.primary, '#FFA366']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <SafeAreaView edges={['top']} style={styles.safeHeader}>
+          <View style={styles.header}>
+            <Pressable 
+              style={styles.backButton}
+              onPress={handleBackPress}
+              accessible={true}
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+            >
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            </Pressable>
+            <Text style={styles.headerTitle}>Match History</Text>
+            <View style={styles.headerSpacer} />
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+      
+      {/* White Background Content */}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {mockMatches.map((match) => (
+          <MatchCard key={match.id} match={match} />
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.neutral.gray[50], // Gray background like profile
+  },
+  headerGradient: {
+    // Remove paddingBottom to fix visibility
+  },
+  safeHeader: {
+    // Remove flex: 1 to fix header height
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: '#FFFFFF',
+    fontFamily: theme.typography.fontFamily.primary,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: theme.colors.neutral.gray[50], // Gray background
+  },
+  scrollContent: {
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl * 2,
+  },
+  matchCard: {
+    backgroundColor: '#FFFFFF', // White containers
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    borderWidth: 2,
+    borderColor: theme.colors.neutral.black,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.colors.neutral.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  leagueNameContainer: {
+    backgroundColor: '#feecdb',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.full,
+    marginBottom: theme.spacing.md,
+    alignSelf: 'flex-start',
+  },
+  leagueName: {
+    fontSize: theme.typography.fontSize.base,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily.primary,
+  },
+  scoreboardContainer: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.md,
+  },
+  playerColumn: {
+    flex: 2,
+    justifyContent: 'flex-end',
+  },
+  playerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    height: 32,
+    marginBottom: theme.spacing.xs,
+  },
+  profileIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: theme.colors.neutral.gray[300],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  setColumn: {
+    flex: 0.8,
+    alignItems: 'center',
+  },
+  playerName: {
+    fontSize: theme.typography.fontSize.base, // Bigger font
+    color: theme.colors.neutral.gray[700],
+    fontFamily: theme.typography.fontFamily.primary,
+    fontWeight: theme.typography.fontWeight.semibold,
+  },
+  setHeader: {
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.neutral.gray[500],
+    fontFamily: theme.typography.fontFamily.primary,
+    marginBottom: theme.spacing.xs,
+    fontWeight: theme.typography.fontWeight.medium,
+  },
+  score: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.neutral.gray[700],
+    fontFamily: theme.typography.fontFamily.primary,
+    fontWeight: theme.typography.fontWeight.bold,
+    height: 32,
+    lineHeight: 32,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.neutral.gray[200],
+    marginVertical: theme.spacing.md,
+  },
+  bottomSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateTimeContainer: {
+    flexDirection: 'column',
+  },
+  dateText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.neutral.gray[600],
+    fontFamily: theme.typography.fontFamily.primary,
+    fontWeight: theme.typography.fontWeight.medium,
+  },
+  timeText: {
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.neutral.gray[500],
+    fontFamily: theme.typography.fontFamily.primary,
+    marginTop: 2,
+  },
+  statusContainer: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.md,
+  },
+  statusText: {
+    fontSize: theme.typography.fontSize.xs,
+    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.primary,
+    textTransform: 'uppercase',
+  },
+  scoreContainer: {
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  winnerText: {
+    color: theme.colors.primary,
+    fontWeight: theme.typography.fontWeight.bold,
+  },
+});
