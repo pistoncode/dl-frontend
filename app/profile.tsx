@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@core/theme/theme';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { DropdownModal } from '@features/profile/components';
 
 const { width } = Dimensions.get('window');
 
@@ -471,6 +472,7 @@ const WinRateCircle = ({ winRate }) => {
   );
 };
 
+
 export default function ProfileAdaptedScreen() {
   // CONCAVITY CONTROLS - Adjust these numbers to change the curve
   const CURVE_HEIGHT = 200;        // Total height of the curve area
@@ -480,6 +482,13 @@ export default function ProfileAdaptedScreen() {
   const [activeTab, setActiveTab] = useState('Tennis');
   const [selectedGame, setSelectedGame] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  
+  // Dropdown states
+  const [eloDropdownVisible, setEloDropdownVisible] = useState(false);
+  const [leagueDropdownVisible, setLeagueDropdownVisible] = useState(false);
+  const [selectedGameType, setSelectedGameType] = useState('Singles');
+  
+  const gameTypeOptions = ['Singles', 'Doubles'];
   const [userData] = useState({
     name: 'Kenneth Riadi',
     username: 'Ken',
@@ -519,6 +528,14 @@ export default function ProfileAdaptedScreen() {
   const handleCloseModal = () => {
     setModalVisible(false);
     setTimeout(() => setSelectedGame(null), 300);
+  };
+
+  // Dropdown handlers
+  const handleGameTypeSelect = (gameType: string) => {
+    setSelectedGameType(gameType);
+    setEloDropdownVisible(false);
+    setLeagueDropdownVisible(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const renderAchievementIcon = (iconName: string) => {
@@ -735,8 +752,14 @@ export default function ProfileAdaptedScreen() {
               
               {/* Dropdown above graph */}
               <View style={styles.dropdownSection}>
-                <Pressable style={styles.dropdownHorizontal}>
-                  <Text style={styles.dropdownText}>Singles</Text>
+                <Pressable 
+                  style={styles.dropdownHorizontal}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setEloDropdownVisible(true);
+                  }}
+                >
+                  <Text style={styles.dropdownText}>{selectedGameType}</Text>
                   <Ionicons name="chevron-down" size={16} color={theme.colors.neutral.gray[600]} />
                 </Pressable>
               </View>
@@ -768,8 +791,14 @@ export default function ProfileAdaptedScreen() {
             <View style={styles.leagueStatsContainer}>
               <View style={styles.statsHeader}>
                 <Text style={styles.skillLabel}>League Stats</Text>
-                <Pressable style={styles.dropdownHorizontal}>
-                  <Text style={styles.dropdownText}>Singles</Text>
+                <Pressable 
+                  style={styles.dropdownHorizontal}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setLeagueDropdownVisible(true);
+                  }}
+                >
+                  <Text style={styles.dropdownText}>{selectedGameType}</Text>
                   <Ionicons name="chevron-down" size={16} color={theme.colors.neutral.gray[600]} />
                 </Pressable>
               </View>
@@ -800,6 +829,26 @@ export default function ProfileAdaptedScreen() {
           onClose={handleCloseModal}
         />
       )}
+      
+      {/* ELO Dropdown Modal */}
+      <DropdownModal
+        visible={eloDropdownVisible}
+        onClose={() => setEloDropdownVisible(false)}
+        options={gameTypeOptions}
+        selectedValue={selectedGameType}
+        onSelect={handleGameTypeSelect}
+        title="Game Type"
+      />
+      
+      {/* League Stats Dropdown Modal */}
+      <DropdownModal
+        visible={leagueDropdownVisible}
+        onClose={() => setLeagueDropdownVisible(false)}
+        options={gameTypeOptions}
+        selectedValue={selectedGameType}
+        onSelect={handleGameTypeSelect}
+        title="Game Type"
+      />
     </View>
   );
 }
