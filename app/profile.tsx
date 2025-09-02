@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@core/theme/theme';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { DropdownModal, WinRateCircle, MatchDetailsModal, EloProgressGraph, EditIcon, MatchHistoryButton } from '@features/profile/components';
+import { DropdownModal, WinRateCircle, MatchDetailsModal, EloProgressGraph, EditIcon, MatchHistoryButton, AchievementIcon } from '@features/profile/components';
 
 const { width } = Dimensions.get('window');
 
@@ -200,9 +200,6 @@ export default function ProfileAdaptedScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const renderAchievementIcon = (iconName: string) => {
-    return <Ionicons name={iconName as any} size={24} color="#FFD700" />;
-  };
 
   return (
     <View style={styles.container}>
@@ -342,7 +339,7 @@ export default function ProfileAdaptedScreen() {
               <View style={styles.achievementsContent}>
                 {userData.achievements.slice(0, 2).map((achievement) => (
                   <View key={achievement.id} style={styles.achievementItem}>
-                    {renderAchievementIcon(achievement.icon)}
+                    <AchievementIcon iconName={achievement.icon} />
                     <View style={styles.achievementTextContainer}>
                       <Text style={styles.achievementText}>{achievement.title}</Text>
                       {achievement.year && (
