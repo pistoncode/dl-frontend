@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@core/theme/theme';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { DropdownModal } from '@features/profile/components';
+import { DropdownModal, WinRateCircle } from '@features/profile/components';
 
 const { width } = Dimensions.get('window');
 
@@ -429,48 +429,6 @@ const EditIcon = ({ color = '#4CAF50' }: { color?: string }) => (
   </Svg>
 );
 
-// Win Rate Circle Component
-const WinRateCircle = ({ winRate }) => {
-  const size = 120;
-  const strokeWidth = 8;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (winRate / 100) * circumference;
-
-  return (
-    <View style={styles.circleContainer}>
-      <Svg width={size} height={size}>
-        {/* Background circle */}
-        <Circle
-          stroke="#FF3B30"
-          fill="transparent"
-          strokeWidth={strokeWidth}
-          r={radius}
-          cx={size / 2}
-          cy={size / 2}
-        />
-        {/* Win rate arc */}
-        <Circle
-          stroke="#34C759"
-          fill="transparent"
-          strokeWidth={strokeWidth}
-          strokeDasharray={strokeDasharray}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          r={radius}
-          cx={size / 2}
-          cy={size / 2}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </Svg>
-      <View style={styles.circleTextContainer}>
-        <Text style={styles.circlePercentage}>{winRate}%</Text>
-        <Text style={styles.circleLabel}>Win Rate</Text>
-      </View>
-    </View>
-  );
-};
 
 
 export default function ProfileAdaptedScreen() {
@@ -1591,28 +1549,6 @@ const styles = StyleSheet.create({
   winRateContainer: {
     alignItems: 'center',
     gap: theme.spacing.md,
-  },
-  circleContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleTextContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circlePercentage: {
-    fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.neutral.gray[900],
-    fontFamily: theme.typography.fontFamily.primary,
-  },
-  circleLabel: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.neutral.gray[600],
-    fontFamily: theme.typography.fontFamily.primary,
-    marginTop: 2,
   },
   winRateLegend: {
     flexDirection: 'row',

@@ -6,3 +6,7 @@ export interface DropdownModalProps {
   onSelect: (value: string) => void;
   title?: string;
 }
+
+export interface WinRateCircleProps {
+  winRate: number;
+}
