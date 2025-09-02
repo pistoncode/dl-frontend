@@ -34,3 +34,8 @@ export interface MatchDetailsModalProps {
   match: GameData | null;
   onClose: () => void;
 }
+
+export interface EloProgressGraphProps {
+  data: GameData[];
+  onPointPress: (game: GameData) => void;
+}
