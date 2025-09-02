@@ -35,24 +35,32 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
     const currentPath = '/' + segments.join('/');
     
     // Define route groups
-    const publicRoutes = ['/', '/login', '/register', '/profile', '/settings', '/edit-profile', '/match-history']; // Temporarily added /profile, /settings, /edit-profile and /match-history for testing
+    const publicRoutes = ['/', '/login', '/register'];
     const authRoutes = ['/email-verification'];
     const onboardingRoutes = ['/onboarding'];
-    const protectedRoutes = ['/home', '/dashboard'];
+    const protectedRoutes = [
+      '/user-dashboard', 
+      '/profile', 
+      '/settings', 
+      '/edit-profile', 
+      '/match-history',
+      '/dev'
+    ];
 
     const isPublicRoute = publicRoutes.includes(currentPath) || currentPath.startsWith('/auth');
     const isAuthRoute = authRoutes.some(route => currentPath.startsWith(route));
     const isOnboardingRoute = onboardingRoutes.some(route => currentPath.startsWith(route));
     const isProtectedRoute = protectedRoutes.some(route => currentPath.startsWith(route));
 
-    console.log('RouteGuard:', {
-      currentPath,
-      isAuthenticated,
-      needsEmailVerification,
-      needsOnboarding,
-      user: user?.email,
-      hasInitialized: hasInitialized.current,
-    });
+    if (__DEV__) {
+      console.log('RouteGuard:', {
+        currentPath,
+        isAuthenticated,
+        needsEmailVerification,
+        needsOnboarding,
+        hasInitialized: hasInitialized.current,
+      });
+    }
 
     // Not authenticated - redirect to public routes
     if (!isAuthenticated) {
@@ -72,20 +80,25 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
       return;
     }
 
-    // Authenticated and verified - redirect to onboarding only if not on landing page initially
-    if (isAuthenticated && !needsEmailVerification) {
-      // If this is the first load and we're on the landing page, don't redirect
-      if (!hasInitialized.current && currentPath === '/') {
-        hasInitialized.current = true;
-        return;
+    // Authenticated, verified, but needs onboarding
+    if (isAuthenticated && !needsEmailVerification && needsOnboarding) {
+      hasInitialized.current = true;
+      if (!isOnboardingRoute) {
+        if (__DEV__) {
+          console.log('Redirecting to onboarding from:', currentPath);
+        }
+        router.replace('/onboarding/personal-info');
       }
-      
+      return;
+    }
+
+    // Authenticated, verified, and onboarding complete - allow access to protected routes
+    if (isAuthenticated && !needsEmailVerification && !needsOnboarding) {
       hasInitialized.current = true;
       
-      // Redirect to onboarding if not already there and not on landing page
-      if (!isOnboardingRoute && currentPath !== '/') {
-        console.log('Redirecting to onboarding from:', currentPath);
-        router.replace('/onboarding/personal-info');
+      // If on public route (except landing), redirect to main app
+      if (isPublicRoute && currentPath !== '/') {
+        router.replace('/user-dashboard');
       }
       return;
     }
