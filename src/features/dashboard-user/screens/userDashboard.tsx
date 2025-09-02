@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useDashboard } from '../DashboardContext';
 import { NavBar } from '@/shared/components/layout';
 import * as Haptics from 'expo-haptics';
+import { signOut } from '@/lib/auth-client';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,6 +25,15 @@ export default function DashboardScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      router.replace('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
               <LinearGradient
@@ -37,11 +47,19 @@ export default function DashboardScreen() {
          <View style={styles.headerSection}>
            <View style={styles.headerContainer}>
              <Text style={styles.logoText}>DEUCE</Text>
-             <View style={styles.profilePicture}>
-               <Image 
-                 source={require('@/assets/images/nickdl.jpeg')}
-                 style={styles.profileImage}
-               />
+             <View style={styles.headerRight}>
+               <TouchableOpacity 
+                 style={styles.logoutButton}
+                 onPress={handleLogout}
+               >
+                 <Text style={styles.logoutText}>Logout</Text>
+               </TouchableOpacity>
+               <View style={styles.profilePicture}>
+                 <Image 
+                   source={require('@/assets/images/nickdl.jpeg')}
+                   style={styles.profileImage}
+                 />
+               </View>
              </View>
            </View>
          </View>
@@ -210,6 +228,22 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 24,
     color: '#FE9F4D',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  logoutButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#FF6B6B',
+    borderRadius: 6,
+  },
+  logoutText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   profilePicture: {
     width: 40,
