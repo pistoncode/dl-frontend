@@ -54,12 +54,18 @@ export default function DashboardScreen() {
                >
                  <Text style={styles.logoutText}>Logout</Text>
                </TouchableOpacity>
-               <View style={styles.profilePicture}>
+               <TouchableOpacity 
+                 style={styles.profilePicture}
+                 onPress={() => {
+                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                   router.push('/profile');
+                 }}
+               >
                  <Image 
                    source={require('@/assets/images/nickdl.jpeg')}
                    style={styles.profileImage}
                  />
-               </View>
+               </TouchableOpacity>
              </View>
            </View>
          </View>
