@@ -40,7 +40,7 @@ describe('QuestionnaireAPI User Profile Methods', () => {
       const result = await api.updateUserProfile(mockUserId, profileData);
 
       expect(fetch).toHaveBeenCalledWith(
-        `http://192.168.1.7:3001/api/onboarding/profile/${mockUserId}`,
+        `http://192.168.1.7:3001/onboarding/profile/${mockUserId}`,
         {
           method: 'PUT',
           headers: {
@@ -122,7 +122,7 @@ describe('QuestionnaireAPI User Profile Methods', () => {
       const result = await api.getUserProfile(mockUserId);
 
       expect(fetch).toHaveBeenCalledWith(
-        `http://192.168.1.7:3001/api/onboarding/profile/${mockUserId}`,
+        `http://192.168.1.7:3001/onboarding/profile/${mockUserId}`,
         {
           headers: {
             'Content-Type': 'application/json'
