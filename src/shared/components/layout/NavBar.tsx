@@ -73,9 +73,9 @@ export default function NavBar({ activeTab = 2, onTabPress }: NavBarProps) {
       </View>
 
       {/* Home Indicator */}
-      <View style={styles.homeIndicator}>
+      {/* <View style={styles.homeIndicator}>
         <View style={styles.homeIndicatorBar} />
-      </View>
+      </View> */}
     </View>
   );
 }
