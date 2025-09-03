@@ -45,13 +45,17 @@ export default function LoginScreen() {
 
   const handleSignIn = async () => {
     setIsLoading(true);
-    try {
-      console.log('Calling authClient.signIn.username...');
+    let data, error;
 
-      const { data, error } = await authClient.signIn.username({
-        username: username, 
-        password: password,
-      });
+    try {
+      console.log('Calling authClient.signIn...');
+
+      if (username.includes('@')) {
+        setEmail(username);
+        [data, error] = await handleSignInWithEmail();
+      } else {
+        [data, error] = await handleSignInWithUsername();
+      }
 
       if (error) {
         console.error('API Error:', error.message);
@@ -61,19 +65,21 @@ export default function LoginScreen() {
 
       if (data) {
         console.log('Sign-in call completed successfully.');
-        
+        if (!data.user.emailVerified) {
+          router.replace({ pathname: '/verifyEmail', params: { email: email } });
+          return;
+        }
         // Check if user has completed onboarding
         const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
-        
+
         if (hasCompletedOnboarding) {
           console.log('User has completed onboarding, redirecting to user dashboard');
           router.replace('/user-dashboard');
-        } else {
+        }
+        else {
           console.log('User has not completed onboarding, redirecting to onboarding');
           router.replace('/onboarding/personal-info');
         }
-      } else {
-        router.replace('/');
       }
     } catch (error) {
       console.error('Sign In Error:', error);
@@ -83,18 +89,24 @@ export default function LoginScreen() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    // TODO: Implement forgot password logic
-    const { data, error } = await authClient.requestPasswordReset({
-      email: email, // required
-      redirectTo: "", //dummy url
-  });
-  if (error) {
-    console.error('Error sending reset password email:', error);
-    Alert.alert('Error', 'Failed to send reset password email');
-  } else {
-    Alert.alert('Forgot Password', 'Reset password email sent');
+  const handleSignInWithEmail = async () => {
+    const { data, error } = await authClient.signIn.email({
+      email: email.trim(),
+      password: password,
+    });
+    return [data, error];
   }
+
+  const handleSignInWithUsername = async () => {
+    const { data, error } = await authClient.signIn.username({
+      username: username.trim(),
+      password: password,
+    });
+    return [data, error];
+  }
+
+  const handleForgotPassword = () => {
+    router.push('/resetPassword');
   };
 
   const handleRegister = () => {
@@ -107,7 +119,7 @@ export default function LoginScreen() {
       const { data, error } = await authClient.signIn.social({
         provider: "facebook"
       });
-      
+
       if (error) {
         console.error('Facebook login error:', error);
         Alert.alert('Login Failed', 'Facebook login failed');
@@ -116,7 +128,7 @@ export default function LoginScreen() {
 
       if (data?.user) {
         const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
-        
+
         if (hasCompletedOnboarding) {
           console.log('User has completed onboarding, redirecting to user dashboard');
           router.replace('/user-dashboard');
@@ -140,7 +152,7 @@ export default function LoginScreen() {
       const { data, error } = await authClient.signIn.social({
         provider: "google",
       });
-      
+
       if (error) {
         console.error('Google login error:', error);
         Alert.alert('Login Failed', 'Google login failed');
@@ -149,7 +161,7 @@ export default function LoginScreen() {
 
       if (data?.user) {
         const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
-        
+
         if (hasCompletedOnboarding) {
           console.log('User has completed onboarding, redirecting to user dashboard');
           router.replace('/user-dashboard');
@@ -172,11 +184,11 @@ export default function LoginScreen() {
     setPasswordFocused(false);
   };
 
-    return (
+  return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -185,119 +197,119 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <ThemedText style={styles.title}>DEUCE</ThemedText>
           </View>
-          
+
           <View style={styles.formContainer}>
-        <ThemedText style={styles.welcomeText}>Welcome back!</ThemedText>
-        <View style={styles.inputContainer}>
-          <ThemedText style={styles.inputLabel}>Username or email</ThemedText>
-          <TextInput
-            style={styles.input}
-            value={username}
-            onChangeText={setUsername}
-            placeholder={usernameFocused ? "" : "Username or email"}
-            placeholderTextColor="#B0B8C1"
-            autoCapitalize="none"
-            autoCorrect={false}
-            onFocus={() => setUsernameFocused(true)}
-            onBlur={() => setUsernameFocused(false)}
-          />
-        </View>
-        
-        <View style={styles.inputContainer}>
-          <ThemedText style={styles.inputLabel}>Password</ThemedText>
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              value={password}
-              onChangeText={setPassword}
-              placeholder={passwordFocused ? "" : "Password"}
-              placeholderTextColor="#B0B8C1"
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-              onFocus={() => setPasswordFocused(true)}
-              onBlur={() => setPasswordFocused(false)}
-            />
-            {password.length > 0 && (
+            <ThemedText style={styles.welcomeText}>Welcome back!</ThemedText>
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.inputLabel}>Username or email</ThemedText>
+              <TextInput
+                style={styles.input}
+                value={username}
+                onChangeText={setUsername}
+                placeholder={usernameFocused ? "" : "Username or email"}
+                placeholderTextColor="#B0B8C1"
+                autoCapitalize="none"
+                autoCorrect={false}
+                onFocus={() => setUsernameFocused(true)}
+                onBlur={() => setUsernameFocused(false)}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.inputLabel}>Password</ThemedText>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder={passwordFocused ? "" : "Password"}
+                  placeholderTextColor="#B0B8C1"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                />
+                {password.length > 0 && (
+                  <Pressable
+                    style={styles.passwordToggle}
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    <Ionicons
+                      name={showPassword ? "eye-off" : "eye"}
+                      size={20}
+                      color="#6C7278"
+                      style={{ opacity: 0.5 }}
+                    />
+                  </Pressable>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.forgotPasswordContainer}>
               <Pressable
-                style={styles.passwordToggle}
-                onPress={() => setShowPassword(!showPassword)}
+                onPress={handleForgotPassword}
+                style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
               >
-                <Ionicons
-                  name={showPassword ? "eye-off" : "eye"}
-                  size={20}
-                  color="#6C7278"
-                  style={{ opacity: 0.5 }}
+                <ThemedText style={styles.forgotPasswordText}>Forgot Password?</ThemedText>
+              </Pressable>
+            </View>
+
+            <Pressable
+              onPress={handleSignIn}
+              style={({ pressed }) => [
+                styles.signInButton,
+                { opacity: pressed ? 0.8 : 1 }
+              ]}
+            >
+              <ThemedText style={styles.signInButtonText}>Sign In</ThemedText>
+            </Pressable>
+
+            {/* Divider with text */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <ThemedText style={styles.dividerText}>or sign up with</ThemedText>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Social Login Buttons */}
+            <View style={styles.socialButtonsContainer}>
+              <Pressable
+                onPress={handleFacebookLogin}
+                style={({ pressed }) => [
+                  styles.socialButton,
+                  styles.facebookButton,
+                  { opacity: pressed ? 0.8 : 1 }
+                ]}
+              >
+                <Ionicons name="logo-facebook" size={28} color="#FFFFFF" />
+              </Pressable>
+
+              <Pressable
+                onPress={handleGoogleLogin}
+                style={({ pressed }) => [
+                  styles.socialButton,
+                  styles.googleButton,
+                  { opacity: pressed ? 0.8 : 1 }
+                ]}
+              >
+                <Image
+                  source={require('@/assets/images/googleicon.svg')}
+                  style={{ width: 24, height: 24 }}
                 />
               </Pressable>
-            )}
-          </View>
-        </View>
-        
-        <View style={styles.forgotPasswordContainer}>
-          <Pressable 
-            onPress={handleForgotPassword}
-            style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
-          >
-            <ThemedText style={styles.forgotPasswordText}>Forgot Password?</ThemedText>
-          </Pressable>
-        </View>
-        
-        <Pressable
-          onPress={handleSignIn}
-          style={({ pressed }) => [
-            styles.signInButton,
-            { opacity: pressed ? 0.8 : 1 }
-          ]}
-        >
-          <ThemedText style={styles.signInButtonText}>Sign In</ThemedText>
-        </Pressable>
-        
-        {/* Divider with text */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerLine} />
-          <ThemedText style={styles.dividerText}>or sign up with</ThemedText>
-          <View style={styles.dividerLine} />
-        </View>
-        
-        {/* Social Login Buttons */}
-        <View style={styles.socialButtonsContainer}>
-          <Pressable
-            onPress={handleFacebookLogin}
-            style={({ pressed }) => [
-              styles.socialButton,
-              styles.facebookButton,
-              { opacity: pressed ? 0.8 : 1 }
-            ]}
-          >
-            <Ionicons name="logo-facebook" size={28} color="#FFFFFF" />
-          </Pressable>
-          
-          <Pressable
-            onPress={handleGoogleLogin}
-            style={({ pressed }) => [
-              styles.socialButton,
-              styles.googleButton,
-              { opacity: pressed ? 0.8 : 1 }
-            ]}
-          >
-            <Image
-              source={require('@/assets/images/googleicon.svg')}
-              style={{ width: 24, height: 24 }}
-            />
-          </Pressable>
-        </View>
-        
-        {/* Register Link */}
-        <View style={styles.registerContainer}>
-          <ThemedText style={styles.registerText}>Don't have an account yet? </ThemedText>
-          <Pressable 
-            onPress={handleRegister}
-            style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
-          >
-            <ThemedText style={styles.registerLink}>Create now!</ThemedText>
-          </Pressable>
-        </View>
+            </View>
+
+            {/* Register Link */}
+            <View style={styles.registerContainer}>
+              <ThemedText style={styles.registerText}>Don't have an account yet? </ThemedText>
+              <Pressable
+                onPress={handleRegister}
+                style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+              >
+                <ThemedText style={styles.registerLink}>Create now!</ThemedText>
+              </Pressable>
+            </View>
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>

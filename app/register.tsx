@@ -45,7 +45,15 @@ export default function RegisterScreen() {
       }
       if (data) {
         console.log('Sign up successful');
-        router.replace('/onboarding/personal-info');
+        const { data: verificationData, error: verificationError } = await authClient.emailOtp.sendVerificationOtp({
+          email: email,
+          type: "email-verification",
+        });
+        console.log('Verification email sent:', verificationData);
+        if (verificationError) {
+          console.error('Verification email error:', verificationError);
+        }
+        router.replace({ pathname: '/verifyEmail', params: { email: email } });
       }
     } catch (error) {
       console.error('Sign up failed:', error);
@@ -57,14 +65,26 @@ export default function RegisterScreen() {
     router.push('/login');
   };
 
-  const handleFacebookLogin = () => {
-    // TODO: Implement Facebook OAuth
-    Alert.alert('Facebook Login', 'Facebook login to be implemented');
+  const handleFacebookLogin = async () => {
+    try {
+      const { data, error } = await authClient.signIn.social({
+        provider: "facebook"
+      })
+      console.log(data, error);
+    } catch (error) {
+      console.error('Error signing in with Facebook:', error);
+    }
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: Implement Google OAuth
-    Alert.alert('Google Login', 'Google login to be implemented');
+  const handleGoogleLogin = async () => {
+    try {
+      const { data, error } = await authClient.signIn.social({
+        provider: "google"
+      })
+      console.log(data, error);
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+    }
   };
 
   const dismissKeyboard = () => {
