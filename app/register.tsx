@@ -24,7 +24,7 @@ export default function RegisterScreen() {
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // TODO: Validate all fields
+
   const handleSignUp = async () => {
     if (!username.trim() || !email.trim() || !phoneNumber.trim() || !password.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
@@ -45,14 +45,6 @@ export default function RegisterScreen() {
       }
       if (data) {
         console.log('Sign up successful');
-        const { data: verificationData, error: verificationError } = await authClient.emailOtp.sendVerificationOtp({
-          email: email,
-          type: "email-verification",
-        });
-        console.log('Verification email sent:', verificationData);
-        if (verificationError) {
-          console.error('Verification email error:', verificationError);
-        }
         router.replace({ pathname: '/verifyEmail', params: { email: email } });
       }
     } catch (error) {

@@ -22,26 +22,28 @@ export default function LoginScreen() {
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const checkOnboardingStatus = async (userId: string) => {
-    try {
-      const backendUrl = getBackendBaseURL();
-      const response = await fetch(`${backendUrl}/api/onboarding/status/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
 
-      if (response.ok) {
-        const data = await response.json();
-        return data.completedOnboarding;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error checking onboarding status:', error);
-      return false; // Default to not completed on error
-    }
-  };
+  // const checkOnboardingStatus = async (userId: string) => {
+  //   try {
+  //     console.log("checkOnboardingStatus is working on login.tsx");
+  //     const backendUrl = getBackendBaseURL();
+  //     const response = await fetch(`${backendUrl}/api/onboarding/status/${userId}`, {
+  //       method: 'GET',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //     });
+
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       return data.completedOnboarding;
+  //     }
+  //     return false;
+  //   } catch (error) {
+  //     console.error('Error checking onboarding status:', error);
+  //     return false; // Default to not completed on error
+  //   }
+  // };
 
   const handleSignIn = async () => {
     setIsLoading(true);
@@ -51,35 +53,48 @@ export default function LoginScreen() {
       console.log('Calling authClient.signIn...');
 
       if (username.includes('@')) {
+        ({ data, error } = await authClient.signIn.email({
+          email: username.trim(),
+          password: password,
+        }));
         setEmail(username);
-        [data, error] = await handleSignInWithEmail();
       } else {
-        [data, error] = await handleSignInWithUsername();
+        ({ data, error } = await authClient.signIn.username({
+          username: username.trim(),
+          password: password,
+        }));
       }
 
       if (error) {
-        console.error('API Error:', error.message);
-        Alert.alert('Sign In Failed', error.message || 'Invalid credentials.');
+        if (error.status === 403) {
+          authClient.emailOtp.sendVerificationOtp({
+            email: email,
+            type: "email-verification",
+          });
+          router.push({ pathname: '/verifyEmail', params: { email: email } });
+          return;
+        }
+          console.error('API Error:', error.message);
+          Alert.alert('Sign In Failed', error.message || 'Invalid credentials.');
         return;
       }
 
       if (data) {
         console.log('Sign-in call completed successfully.');
         if (!data.user.emailVerified) {
-          router.replace({ pathname: '/verifyEmail', params: { email: email } });
+          // Pass the confirmed email to the verification screen
+          router.replace({ pathname: '/verifyEmail', params: { email: data.user.email } });
           return;
         }
-        // Check if user has completed onboarding
-        const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
 
-        if (hasCompletedOnboarding) {
-          console.log('User has completed onboarding, redirecting to user dashboard');
-          router.replace('/user-dashboard');
-        }
-        else {
-          console.log('User has not completed onboarding, redirecting to onboarding');
-          router.replace('/onboarding/personal-info');
-        }
+        // const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
+
+        // if (hasCompletedOnboarding) {
+        //   router.replace('/user-dashboard');
+        // }
+        // else {
+        //   router.replace('/onboarding/personal-info');
+        // }
       }
     } catch (error) {
       console.error('Sign In Error:', error);
@@ -88,22 +103,6 @@ export default function LoginScreen() {
       setIsLoading(false);
     }
   };
-
-  const handleSignInWithEmail = async () => {
-    const { data, error } = await authClient.signIn.email({
-      email: email.trim(),
-      password: password,
-    });
-    return [data, error];
-  }
-
-  const handleSignInWithUsername = async () => {
-    const { data, error } = await authClient.signIn.username({
-      username: username.trim(),
-      password: password,
-    });
-    return [data, error];
-  }
 
   const handleForgotPassword = () => {
     router.push('/resetPassword');
@@ -126,17 +125,17 @@ export default function LoginScreen() {
         return;
       }
 
-      if (data?.user) {
-        const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
+      // if (data?.user) {
+      //   const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
 
-        if (hasCompletedOnboarding) {
-          console.log('User has completed onboarding, redirecting to user dashboard');
-          router.replace('/user-dashboard');
-        } else {
-          console.log('User has not completed onboarding, redirecting to onboarding');
-          router.replace('/onboarding/personal-info');
-        }
-      }
+      //   if (hasCompletedOnboarding) {
+      //     console.log('User has completed onboarding, redirecting to user dashboard');
+      //     router.replace('/user-dashboard');
+      //   } else {
+      //     console.log('User has not completed onboarding, redirecting to onboarding');
+      //     router.replace('/onboarding/personal-info');
+      //   }
+      // }
     } catch (error) {
       console.error('Facebook login error:', error);
       Alert.alert('Login Failed', 'Facebook login failed');
@@ -159,17 +158,17 @@ export default function LoginScreen() {
         return;
       }
 
-      if (data?.user) {
-        const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
+      // if (data?.user) {
+      //   const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
 
-        if (hasCompletedOnboarding) {
-          console.log('User has completed onboarding, redirecting to user dashboard');
-          router.replace('/user-dashboard');
-        } else {
-          console.log('User has not completed onboarding, redirecting to onboarding');
-          router.replace('/onboarding/personal-info');
-        }
-      }
+      //   if (hasCompletedOnboarding) {
+      //     console.log('User has completed onboarding, redirecting to user dashboard');
+      //     router.replace('/user-dashboard');
+      //   } else {
+      //     console.log('User has not completed onboarding, redirecting to onboarding');
+      //     router.replace('/onboarding/personal-info');
+      //   }
+      // }
     } catch (error) {
       console.error('Google login error:', error);
       Alert.alert('Login Failed', 'Google login failed');

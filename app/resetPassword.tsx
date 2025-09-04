@@ -90,8 +90,7 @@ export default function ResetPasswordScreen() {
     setIsLoading(true);
 
     try {
-      // Assuming the method is `resetPassword` under `emailOtp` based on docs
-      // and existing `sendVerificationOtp` call.
+
       const { data, error } = await authClient.emailOtp.resetPassword({
         email,
         otp,
