@@ -75,6 +75,58 @@ export interface UserProfileUpdate {
   dateOfBirth: string;
 }
 
+export interface UserLocationUpdate {
+  country: string;
+  state: string;
+  city: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface LocationSearchResult {
+  id: string;
+  name: string;
+  formatted_address: string;
+  geometry: {
+    location: {
+      lat: number;
+      lng: number;
+    };
+  };
+  place_id: string;
+  types: string[];
+  // Optional structured address components from backend
+  components?: {
+    country: string;
+    state: string;
+    city: string;
+  };
+  // Raw address details if provided
+  address?: any;
+}
+
+export interface LocationSearchResponse {
+  success: boolean;
+  results: LocationSearchResult[];
+  query: string;
+  count: number;
+}
+
+export interface ReverseGeocodeResponse {
+  success: boolean;
+  address: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  address_details?: any;
+  components?: {
+    country: string;
+    state: string;
+    city: string;
+  };
+}
+
 export class QuestionnaireAPI {
   private readonly getAuthHeaders = async () => {
     return {
@@ -228,6 +280,109 @@ export class QuestionnaireAPI {
       return data;
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      throw error;
+    }
+  }
+
+  async saveUserLocation(userId: string, locationData: UserLocationUpdate): Promise<{ success: boolean; location: any }> {
+    try {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
+      const headers = await this.getAuthHeaders();
+      
+      const response = await fetch(`${BASE_URL}/api/users/${userId}/location`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(locationData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to save location: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error saving user location:', error);
+      throw error;
+    }
+  }
+
+  async searchLocations(query: string, limit: number = 10): Promise<LocationSearchResponse> {
+    try {
+      if (!query || query.trim().length < 2) {
+        throw new Error('Query must be at least 2 characters long');
+      }
+
+      const headers = await this.getAuthHeaders();
+      const url = `${BASE_URL}/api/locations/search?q=${encodeURIComponent(query.trim())}&limit=${limit}`;
+      
+      console.log('🔍 Location search URL:', url);
+      console.log('🌐 Base URL:', BASE_URL);
+      
+      const response = await fetch(url, {
+        headers
+      });
+      
+      console.log('📡 Location search response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Location search error response:', errorData);
+        throw new Error(errorData.error || `Failed to search locations: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Location search success:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Error searching locations:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        query,
+        limit,
+        baseURL: BASE_URL
+      });
+      throw error;
+    }
+  }
+
+  async reverseGeocode(latitude: number, longitude: number): Promise<ReverseGeocodeResponse> {
+    try {
+      const headers = await this.getAuthHeaders();
+      const url = `${BASE_URL}/api/locations/reverse-geocode?lat=${latitude}&lng=${longitude}`;
+      
+      console.log('🌐 Reverse geocoding URL:', url);
+      console.log('🌐 Base URL:', BASE_URL);
+      
+      const response = await fetch(url, {
+        headers
+      });
+      
+      console.log('📡 Reverse geocoding response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Reverse geocoding error response:', errorData);
+        throw new Error(errorData.error || `Failed to reverse geocode: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Reverse geocoding success:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Error reverse geocoding:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        latitude,
+        longitude,
+        baseURL: BASE_URL
+      });
       throw error;
     }
   }

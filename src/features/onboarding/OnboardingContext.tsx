@@ -19,6 +19,8 @@ const initialData: OnboardingData = {
   dateOfBirth: null,
   location: '',
   useCurrentLocation: false,
+  latitude: undefined,
+  longitude: undefined,
   selectedSports: [],
   skillAssessments: {},
   profileImage: undefined,
@@ -82,7 +84,7 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
       if (data.fullName && data.gender && data.dateOfBirth) {
         completedSteps.push('personal-info');
       }
-      if (data.location || data.useCurrentLocation) {
+      if (data.location || (data.useCurrentLocation && data.latitude && data.longitude)) {
         completedSteps.push('location');
       }
       if (data.selectedSports.length > 0) {

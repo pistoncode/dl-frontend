@@ -29,6 +29,8 @@ export interface OnboardingData {
   // Location Data
   location: string;
   useCurrentLocation: boolean;
+  latitude?: number;
+  longitude?: number;
   
   // Sport Selection
   selectedSports: SportType[];
