@@ -15,6 +15,7 @@ export default function HomeScreen() {
   const { data: session, isPending } = useSession();
 
   const checkOnboardingStatus = async (userId: string) => {
+    console.log("checkOnboardingStatus is working on index.tsx");
     try {
       const backendUrl = getBackendBaseURL();
       const response = await fetch(`${backendUrl}/api/onboarding/status/${userId}`, {
@@ -37,24 +38,24 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const checkAuthStatus = async () => {
-      if (isPending) return; // Wait for session to load
-      
+      if (isPending) {
+        return;
+      }
       if (session?.user) {
-        console.log('User is authenticated, checking onboarding status');
         const hasCompletedOnboarding = await checkOnboardingStatus(session.user.id);
         
         if (hasCompletedOnboarding) {
-          console.log('User has completed onboarding, redirecting to user dashboard');
+          console.log('-> User has completed onboarding, redirecting to user dashboard...');
           router.replace('/user-dashboard');
         } else {
-          console.log('User has not completed onboarding, redirecting to onboarding');
+          console.log('-> User has not completed onboarding, redirecting to onboarding...');
           router.replace('/onboarding/personal-info');
         }
       }
     };
 
     checkAuthStatus();
-  }, [session, isPending, router]);
+  }, [session]);
 
   const handleGetStarted = () => {
     router.push('/login');

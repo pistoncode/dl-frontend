@@ -11,16 +11,20 @@ import { authClient } from '@/lib/auth-client';
 export default function VerifyEmailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(params.email);
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [otpFocused, setOtpFocused] = useState(false);
 
-  useEffect(() => {
-    if (typeof params.email === 'string') {
-      setEmail(params.email);
-    }
-  }, [params.email]);
+  // useEffect(() => {
+  //   if (typeof params.email === 'string' && params.email ) {
+  //     setEmail(params.email);
+  //     authClient.emailOtp.sendVerificationOtp({
+  //       email: params.email,
+  //       type: "email-verification",
+  //     });
+  //   }
+  // }, [params.email]);
 
   const handleVerifyOtp = async () => {
     if (!otp.trim() || otp.length < 6) {
@@ -41,7 +45,7 @@ export default function VerifyEmailScreen() {
         Alert.alert(
           'Success',
           'Your email has been verified successfully.',
-          [{ text: 'OK', onPress: () => router.replace('/login') }]
+          [{ text: 'OK', onPress: () => router.replace('/') }]
         );
       }
     } catch (err) {
