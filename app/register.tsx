@@ -35,7 +35,7 @@ export default function RegisterScreen() {
       username: username,
       email: email,
       name: "name",
-      // phone: phoneNumber,
+      // phone: phoneNumber, // Note: better-auth doesn't support phone field by default
       password: password,
       });
       if (error) {
@@ -45,7 +45,11 @@ export default function RegisterScreen() {
       }
       if (data) {
         console.log('Sign up successful');
+        console.log('Registration response data:', data);
+        console.log('User emailVerified:', data.user?.emailVerified);
+        console.log('About to navigate to verifyEmail page...');
         router.replace({ pathname: '/verifyEmail', params: { email: email } });
+        console.log('Navigation to verifyEmail completed');
       }
     } catch (error) {
       console.error('Sign up failed:', error);

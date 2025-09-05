@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, TextInput, Pressable, Alert, TouchableWithoutFeedback, Keyboard, ScrollView } from 'react-native';
+import { StyleSheet, View, TextInput, Pressable, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { ThemedText } from '@/components/ThemedText';
@@ -67,11 +67,13 @@ export default function LoginScreen() {
 
       if (error) {
         if (error.status === 403) {
+          // Use the email from the input field, or the stored email state
+          const emailToUse = username.includes('@') ? username.trim() : email;
           authClient.emailOtp.sendVerificationOtp({
-            email: email,
+            email: emailToUse,
             type: "email-verification",
           });
-          router.push({ pathname: '/verifyEmail', params: { email: email } });
+          router.push({ pathname: '/verifyEmail', params: { email: emailToUse } });
           return;
         }
           console.error('API Error:', error.message);
@@ -81,20 +83,90 @@ export default function LoginScreen() {
 
       if (data) {
         console.log('Sign-in call completed successfully.');
+        console.log('User email verified:', data.user.emailVerified);
+        console.log('User email:', data.user.email);
+        
         if (!data.user.emailVerified) {
-          // Pass the confirmed email to the verification screen
+          console.log('Email not verified, redirecting to verification screen');
+          // Send OTP and redirect to verification screen
+          await authClient.emailOtp.sendVerificationOtp({
+            email: data.user.email,
+            type: "email-verification",
+          });
           router.replace({ pathname: '/verifyEmail', params: { email: data.user.email } });
           return;
         }
 
-        // const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
-
-        // if (hasCompletedOnboarding) {
-        //   router.replace('/user-dashboard');
-        // }
-        // else {
-        //   router.replace('/onboarding/personal-info');
-        // }
+        // Check onboarding status and redirect appropriately  
+        console.log('Login successful, email verified, checking onboarding status...');
+        
+        try {
+          const statusUrl = '/api/onboarding/status/' + data.user.id;
+          console.log('Calling onboarding status URL:', statusUrl);
+          console.log('User ID:', data.user.id);
+          
+          // Try with direct fetch to backend URL instead of authClient.$fetch
+          const backendUrl = getBackendBaseURL();
+          const fullUrl = `${backendUrl}${statusUrl}`;
+          console.log('Full URL:', fullUrl);
+          
+          const response = await fetch(fullUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          console.log('Response status:', response.status);
+          console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+          
+          const onboardingData = await response.json();
+          
+          console.log('Onboarding status response:', onboardingData);
+          
+          if (onboardingData?.completedOnboarding) {
+            console.log('User completed basic onboarding, checking assessment status...');
+            
+            // Check if user has completed sport assessment
+            try {
+              const assessmentUrl = '/api/onboarding/assessment-status/' + data.user.id;
+              const fullAssessmentUrl = `${backendUrl}${assessmentUrl}`;
+              console.log('Calling assessment status URL:', fullAssessmentUrl);
+              
+              const assessmentResponse = await fetch(fullAssessmentUrl, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              });
+              
+              console.log('Assessment response status:', assessmentResponse.status);
+              const assessmentData = await assessmentResponse.json();
+              console.log('Assessment status response:', assessmentData);
+              
+              if (assessmentData?.hasCompletedAssessment) {
+                console.log('User completed assessment, redirecting to dashboard');
+                router.push('/user-dashboard');
+              } else {
+                console.log('User needs to complete assessment, redirecting to game select');
+                router.push('/onboarding/game-select');
+              }
+            } catch (assessmentError) {
+              console.error('Error checking assessment status:', assessmentError);
+              // If assessment check fails, go to dashboard anyway
+              console.log('Assessment check failed, redirecting to dashboard');
+              router.push('/user-dashboard');
+            }
+          } else {
+            console.log('User needs onboarding, redirecting to onboarding');
+            router.push('/onboarding/personal-info');
+          }
+        } catch (error) {
+          console.error('Error checking onboarding status:', error);
+          // If onboarding check fails, assume needs onboarding
+          console.log('Onboarding check failed, redirecting to onboarding');
+          router.push('/onboarding/personal-info');
+        }
       }
     } catch (error) {
       console.error('Sign In Error:', error);
@@ -256,12 +328,21 @@ export default function LoginScreen() {
 
             <Pressable
               onPress={handleSignIn}
+              disabled={isLoading}
               style={({ pressed }) => [
                 styles.signInButton,
-                { opacity: pressed ? 0.8 : 1 }
+                { opacity: (pressed || isLoading) ? 0.8 : 1 },
+                isLoading && styles.signInButtonLoading
               ]}
             >
-              <ThemedText style={styles.signInButtonText}>Sign In</ThemedText>
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ThemedText style={styles.signInButtonText}>Signing In...</ThemedText>
+                </View>
+              ) : (
+                <ThemedText style={styles.signInButtonText}>Sign In</ThemedText>
+              )}
             </Pressable>
 
             {/* Divider with text */}
@@ -413,6 +494,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.4)',
     elevation: 2,
+  },
+  signInButtonLoading: {
+    opacity: 0.8,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   signInButtonText: {
     color: '#FFFFFF',

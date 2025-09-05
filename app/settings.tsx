@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@core/theme/theme';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { authClient } from '@/lib/auth-client';
+import * as SecureStore from 'expo-secure-store';
 
 // BackgroundGradient Component (consistent with profile)
 const BackgroundGradient = () => {
@@ -71,9 +73,39 @@ export default function SettingsScreen() {
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: () => {
-            console.log('User signed out');
-            // Add actual logout logic here
+          onPress: async () => {
+            try {
+              console.log('User signing out...');
+              
+              // Sign out from better-auth
+              await authClient.signOut();
+              console.log('Sign out completed, clearing local storage...');
+              
+              // Manually clear all better-auth related storage
+              try {
+                await SecureStore.deleteItemAsync('deuceleague.sessionToken');
+                await SecureStore.deleteItemAsync('deuceleague.session');
+                await SecureStore.deleteItemAsync('deuceleague.user');
+                await SecureStore.deleteItemAsync('deuceleague.accessToken');
+                await SecureStore.deleteItemAsync('deuceleague.refreshToken');
+                console.log('Local storage cleared successfully');
+              } catch (storageError) {
+                console.log('Some storage items may not exist:', storageError);
+              }
+              
+              // Add a longer delay to ensure complete cleanup
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+              console.log('Navigating to home page...');
+              // Navigate to home page after logout to avoid double redirection
+              router.replace('/');
+              
+              console.log('Logout process completed - user should see login page');
+              
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
           },
         },
       ]
@@ -168,6 +200,21 @@ export default function SettingsScreen() {
           type: 'navigate',
           icon: 'information-circle-outline',
           action: () => router.push('/about'),
+        },
+      ],
+    },
+    {
+      id: 'account_actions',
+      title: 'Account Actions',
+      items: [
+        {
+          id: 'logout',
+          title: 'Sign Out',
+          subtitle: 'Sign out of your account',
+          type: 'action',
+          icon: 'log-out-outline',
+          action: handleLogout,
+          iconColor: '#EF4444',
         },
       ],
     },

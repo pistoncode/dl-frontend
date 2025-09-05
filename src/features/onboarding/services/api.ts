@@ -76,9 +76,8 @@ export interface UserProfileUpdate {
 }
 
 export interface UserLocationUpdate {
-  country: string;
-  state: string;
   city: string;
+  state?: string;
   latitude?: number;
   longitude?: number;
 }
@@ -292,7 +291,7 @@ export class QuestionnaireAPI {
 
       const headers = await this.getAuthHeaders();
       
-      const response = await fetch(`${BASE_URL}/api/users/${userId}/location`, {
+      const response = await fetch(`${BASE_URL}/api/onboarding/location/${userId}`, {
         method: 'POST',
         headers,
         body: JSON.stringify(locationData)
@@ -383,6 +382,57 @@ export class QuestionnaireAPI {
         longitude,
         baseURL: BASE_URL
       });
+      throw error;
+    }
+  }
+
+  async completeOnboarding(userId: string): Promise<{ success: boolean; message: string; completedOnboarding: boolean }> {
+    try {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
+      const headers = await this.getAuthHeaders();
+      
+      const response = await fetch(`${BASE_URL}/api/onboarding/complete/${userId}`, {
+        method: 'POST',
+        headers
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to complete onboarding: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      throw error;
+    }
+  }
+
+  async getAssessmentStatus(userId: string): Promise<{ hasCompletedAssessment: boolean; assessmentCount: number; success: boolean }> {
+    try {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
+      const headers = await this.getAuthHeaders();
+      
+      const response = await fetch(`${BASE_URL}/api/onboarding/assessment-status/${userId}`, {
+        headers
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to get assessment status: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error getting assessment status:', error);
       throw error;
     }
   }

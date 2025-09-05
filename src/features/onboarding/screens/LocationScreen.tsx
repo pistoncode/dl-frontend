@@ -412,17 +412,18 @@ const LocationScreen = () => {
       }
 
       const parsedLocation = parseLocationString(locationString);
-      if (!parsedLocation.country || parsedLocation.country === 'Unknown') {
-        console.warn('Country is missing or unknown; skipping backend save to avoid incorrect data');
-        return;
-      }
-      const locationData = {
-        ...parsedLocation,
+      
+      // Only send city and state data
+      let locationData = {
+        city: parsedLocation.city || '',
+        state: parsedLocation.state || '',
         ...(coordinates && {
           latitude: coordinates.latitude,
           longitude: coordinates.longitude
         })
       };
+
+      console.log('Saving location data:', locationData);
 
       await questionnaireAPI.saveUserLocation(session.user.id, locationData);
       console.log('Location saved to backend successfully');
@@ -504,7 +505,15 @@ const LocationScreen = () => {
         );
       }
       
-      // Navigate to next screen
+      // Mark basic onboarding as completed (personal info + location)
+      try {
+        await questionnaireAPI.completeOnboarding(session.user.id);
+        console.log('Basic onboarding completed (personal info + location)');
+      } catch (error) {
+        console.error('Error completing basic onboarding:', error);
+      }
+
+      // Navigate to sport assessment (optional step)
       router.push('/onboarding/game-select');
     }
   };

@@ -30,65 +30,8 @@ const DefaultProfileIcon = () => (
 );
 
 
-// Mock match data
-const mockMatches = [
-  {
-    id: '1',
-    league: 'Petaling Jaya Singles League',
-    player1: 'Alex',
-    player2: 'Ken',
-    scores: {
-      set1: { player1: 6, player2: 4 },
-      set2: { player1: 7, player2: 5 },
-      set3: { player1: null, player2: null },
-    },
-    date: 'Dec 15, 2024',
-    time: '10:00 AM',
-    status: 'completed',
-  },
-  {
-    id: '2',
-    league: 'KL Open Tournament',
-    player1: 'Ken',
-    player2: 'Sarah',
-    scores: {
-      set1: { player1: 4, player2: 6 },
-      set2: { player1: 6, player2: 3 },
-      set3: { player1: 7, player2: 6 },
-    },
-    date: 'Dec 10, 2024',
-    time: '2:30 PM',
-    status: 'completed',
-  },
-  {
-    id: '3',
-    league: 'Selangor Doubles Championship',
-    player1: 'Ken & Mike',
-    player2: 'Tom & Lisa',
-    scores: {
-      set1: { player1: 6, player2: 3 },
-      set2: { player1: 5, player2: 7 },
-      set3: { player1: 4, player2: 2 },
-    },
-    date: 'Dec 8, 2024',
-    time: '4:00 PM',
-    status: 'ongoing',
-  },
-  {
-    id: '4',
-    league: 'Sepang Club League',
-    player1: 'Ken',
-    player2: 'David',
-    scores: {
-      set1: { player1: 6, player2: 2 },
-      set2: { player1: 6, player2: 4 },
-      set3: { player1: null, player2: null },
-    },
-    date: 'Dec 5, 2024',
-    time: '9:00 AM',
-    status: 'completed',
-  },
-];
+// Real match data - currently empty until match system is implemented
+const matches = []; // Will be populated from API when match system is ready
 
 const MatchCard = ({ match }) => {
   // Determine winner based on sets won
@@ -288,9 +231,20 @@ export default function MatchHistoryScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {mockMatches.map((match) => (
-          <MatchCard key={match.id} match={match} />
-        ))}
+        {matches.length > 0 ? (
+          matches.map((match) => (
+            <MatchCard key={match.id} match={match} />
+          ))
+        ) : (
+          <View style={styles.noDataContainer}>
+            <Ionicons name="tennisball-outline" size={64} color="#E5E7EB" />
+            <Text style={styles.noDataTitle}>No Match History</Text>
+            <Text style={styles.noDataText}>
+              You haven't played any matches yet.{'\n'}
+              Start playing to see your match history here!
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -467,5 +421,27 @@ const styles = StyleSheet.create({
   winnerText: {
     color: theme.colors.primary,
     fontWeight: theme.typography.fontWeight.bold,
+  },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xl * 3,
+    paddingHorizontal: theme.spacing.xl,
+  },
+  noDataTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.neutral.gray[800],
+    fontFamily: theme.typography.fontFamily.primary,
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+  },
+  noDataText: {
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.neutral.gray[600],
+    fontFamily: theme.typography.fontFamily.primary,
+    textAlign: 'center',
+    lineHeight: theme.typography.lineHeight.relaxed,
   },
 });
