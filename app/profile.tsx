@@ -230,6 +230,13 @@ export default function ProfileAdaptedScreen() {
     }, [loadData])
   );
   
+  // Update activeTab to user's first sport when userData is loaded
+  useEffect(() => {
+    if (userData?.sports && userData.sports.length > 0 && userData.sports[0] !== 'No sports yet') {
+      setActiveTab(userData.sports[0]);
+    }
+  }, [userData?.sports, setActiveTab]);
+  
   // Fallback data using team lead's original mock data for when API is not available
   // const { mockEloData, userData, gameTypeOptions } = require('../src/features/profile/data/mockData');
   
@@ -245,10 +252,10 @@ export default function ProfileAdaptedScreen() {
     gender: profileData.gender || 'Gender not set',
     skillLevel: 'Intermediate', // This would come from skillRatings
     skillRatings: profileData.skillRatings || {}, // Pass through the actual skill ratings for DMR section
-    sports: profileData.skillRatings && typeof profileData.skillRatings === 'object' 
+    sports: profileData.skillRatings && typeof profileData.skillRatings === 'object' && Object.keys(profileData.skillRatings).length > 0
       ? Object.keys(profileData.skillRatings).map(sport => sport.charAt(0).toUpperCase() + sport.slice(1)) 
       : ['No sports yet'],
-    activeSports: profileData.skillRatings && typeof profileData.skillRatings === 'object' 
+    activeSports: profileData.skillRatings && typeof profileData.skillRatings === 'object' && Object.keys(profileData.skillRatings).length > 0
       ? Object.keys(profileData.skillRatings).map(sport => sport.charAt(0).toUpperCase() + sport.slice(1)) 
       : [],
     achievements: achievements || [],
@@ -259,6 +266,7 @@ export default function ProfileAdaptedScreen() {
     location: 'Loading...',
     gender: 'Loading...',
     skillLevel: 'Loading...',
+    skillRatings: {},
     sports: [],
     activeSports: [],
     achievements: [],
@@ -268,7 +276,7 @@ export default function ProfileAdaptedScreen() {
   
   // Helper function to get rating values from skillRatings
   const getRatingForType = (sport: string, type: 'singles' | 'doubles') => {
-    if (userData.skillRatings && userData.skillRatings[sport.toLowerCase()]) {
+    if (userData?.skillRatings && userData.skillRatings[sport.toLowerCase()]) {
       const rating = userData.skillRatings[sport.toLowerCase()];
       
       // Check for specific singles/doubles rating first
@@ -430,8 +438,8 @@ export default function ProfileAdaptedScreen() {
 
           {/* Sports Pills */}
           <View style={styles.sportsPills}>
-            {userData.sports.map((sport) => {
-              const isActive = userData.activeSports.includes(sport);
+            {userData.sports?.map((sport) => {
+              const isActive = userData.activeSports?.includes(sport);
               
               return (
                 <Pressable 
@@ -497,7 +505,7 @@ export default function ProfileAdaptedScreen() {
             <View style={styles.sportsHeader}>
               <Text style={styles.sectionTitle}>Sports</Text>
               <View style={styles.tabs}>
-                {userData.sports.map((sport) => (
+                {userData.sports?.map((sport) => (
                   <Pressable
                     key={sport}
                     style={[
@@ -537,7 +545,7 @@ export default function ProfileAdaptedScreen() {
                     <Text style={styles.dmrTypeLabel}>Singles</Text>
                     <View style={styles.ratingCircleSmall}>
                       <Text style={styles.ratingTextSmall}>
-                        {getRatingForType(userData.sports[0] || 'pickleball', 'singles') || 'N/A'}
+                        {getRatingForType(activeTab || userData.sports?.[0] || 'pickleball', 'singles') || 'N/A'}
                       </Text>
                     </View>
                   </View>
@@ -545,7 +553,7 @@ export default function ProfileAdaptedScreen() {
                     <Text style={styles.dmrTypeLabel}>Doubles</Text>
                     <View style={styles.ratingCircleSmall}>
                       <Text style={styles.ratingTextSmall}>
-                        {getRatingForType(userData.sports[0] || 'pickleball', 'doubles') || 'N/A'}
+                        {getRatingForType(activeTab || userData.sports?.[0] || 'pickleball', 'doubles') || 'N/A'}
                       </Text>
                     </View>
                   </View>

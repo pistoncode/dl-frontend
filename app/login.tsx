@@ -101,18 +101,48 @@ export default function LoginScreen() {
         console.log('Login successful, email verified, checking onboarding status...');
         
         try {
-          const onboardingData = await authClient.$fetch('/api/onboarding/status/' + data.user.id, {
+          const statusUrl = '/api/onboarding/status/' + data.user.id;
+          console.log('Calling onboarding status URL:', statusUrl);
+          console.log('User ID:', data.user.id);
+          
+          // Try with direct fetch to backend URL instead of authClient.$fetch
+          const backendUrl = getBackendBaseURL();
+          const fullUrl = `${backendUrl}${statusUrl}`;
+          console.log('Full URL:', fullUrl);
+          
+          const response = await fetch(fullUrl, {
             method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
           });
+          
+          console.log('Response status:', response.status);
+          console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+          
+          const onboardingData = await response.json();
+          
+          console.log('Onboarding status response:', onboardingData);
           
           if (onboardingData?.completedOnboarding) {
             console.log('User completed basic onboarding, checking assessment status...');
             
             // Check if user has completed sport assessment
             try {
-              const assessmentData = await authClient.$fetch('/api/onboarding/assessment-status/' + data.user.id, {
+              const assessmentUrl = '/api/onboarding/assessment-status/' + data.user.id;
+              const fullAssessmentUrl = `${backendUrl}${assessmentUrl}`;
+              console.log('Calling assessment status URL:', fullAssessmentUrl);
+              
+              const assessmentResponse = await fetch(fullAssessmentUrl, {
                 method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
               });
+              
+              console.log('Assessment response status:', assessmentResponse.status);
+              const assessmentData = await assessmentResponse.json();
+              console.log('Assessment status response:', assessmentData);
               
               if (assessmentData?.hasCompletedAssessment) {
                 console.log('User completed assessment, redirecting to dashboard');

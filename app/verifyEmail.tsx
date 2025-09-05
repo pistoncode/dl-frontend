@@ -16,13 +16,21 @@ export default function VerifyEmailScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [otpFocused, setOtpFocused] = useState(false);
 
+  console.log('VerifyEmailScreen: Component mounted');
+  console.log('VerifyEmailScreen: Email param:', params.email);
+
   useEffect(() => {
+    console.log('VerifyEmailScreen: useEffect triggered');
     if (typeof params.email === 'string' && params.email ) {
+      console.log('VerifyEmailScreen: Setting email and sending OTP to:', params.email);
       setEmail(params.email);
       authClient.emailOtp.sendVerificationOtp({
         email: params.email,
         type: "email-verification",
       });
+      console.log('VerifyEmailScreen: OTP send request completed');
+    } else {
+      console.log('VerifyEmailScreen: No valid email param, email is:', params.email);
     }
   }, [params.email]);
 

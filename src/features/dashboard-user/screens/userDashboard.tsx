@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, Text, View, StyleSheet, Dimensions, Platform, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useDashboard } from '../DashboardContext';
 import { NavBar } from '@/shared/components/layout';
+import { useSession } from '@/lib/auth-client';
 import * as Haptics from 'expo-haptics';
 // import { signOut } from '@/lib/auth-client'; // Removed - logout now handled in settings
 
@@ -12,11 +13,30 @@ const { width, height } = Dimensions.get('window');
 
 export default function DashboardScreen() {
   const { userName } = useDashboard();
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = React.useState(2);
   const [pickleballButtonLabel, setPickleballButtonLabel] = React.useState<'Enter League' | 'Complete Questionnaire'>('Enter League');
   const [tennisButtonLabel, setTennisButtonLabel] = React.useState<'Enter League' | 'Complete Questionnaire'>('Complete Questionnaire');
 
   console.log(`DashboardScreen: Current activeTab is ${activeTab}`);
+
+  // Basic session protection only - let login.tsx handle onboarding flow
+  useEffect(() => {
+    if (!session?.user?.id) {
+      console.log('DashboardScreen: No session, redirecting to login');
+      router.replace('/login');
+      return;
+    }
+
+    // DON'T redirect unverified users - they might be on verifyEmail page
+    // Let the natural flow handle email verification
+    if (!session.user.emailVerified) {
+      console.log('DashboardScreen: Email not verified, but allowing access (user might be verifying)');
+      return;
+    }
+
+    console.log('DashboardScreen: User has valid session, allowing access');
+  }, [session]);
 
   const handleTabPress = (tabIndex: number) => {
     console.log(`DashboardScreen: Setting activeTab to ${tabIndex}`);

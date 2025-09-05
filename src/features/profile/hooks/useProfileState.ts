@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { GameData } from '../types';
 
-export const useProfileState = () => {
-  const [activeTab, setActiveTab] = useState('Tennis');
+export const useProfileState = (initialSport?: string) => {
+  const [activeTab, setActiveTab] = useState(initialSport || 'Tennis');
   const [selectedGame, setSelectedGame] = useState<GameData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [eloDropdownVisible, setEloDropdownVisible] = useState(false);

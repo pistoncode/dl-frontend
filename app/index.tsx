@@ -8,88 +8,22 @@ import { Colors } from '@/constants/Colors';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useSession } from '@/lib/auth-client';
-import { getBackendBaseURL } from '@/config/network';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
 
-  const checkOnboardingStatus = async (userId: string) => {
-    console.log("checkOnboardingStatus is working on index.tsx");
-    try {
-      const backendUrl = getBackendBaseURL();
-      const response = await fetch(`${backendUrl}/api/onboarding/status/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.completedOnboarding;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error checking onboarding status:', error);
-      return false;
-    }
-  };
 
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      if (isPending) {
-        return;
-      }
-      if (session?.user) {
-        // Don't redirect if email is not verified - let user complete email verification first
-        if (!session.user.emailVerified) {
-          console.log('-> User email not verified, staying on current page for email verification');
-          return;
-        }
-        
-        const hasCompletedOnboarding = await checkOnboardingStatus(session.user.id);
-        
-        if (hasCompletedOnboarding) {
-          console.log('-> User has completed basic onboarding, checking assessment status...');
-          
-          // Check if user has completed sport assessment
-          try {
-            const backendUrl = getBackendBaseURL();
-            const assessmentResponse = await fetch(`${backendUrl}/api/onboarding/assessment-status/${session.user.id}`, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            });
-            
-            if (assessmentResponse.ok) {
-              const assessmentData = await assessmentResponse.json();
-              if (assessmentData.hasCompletedAssessment) {
-                console.log('-> User completed assessment, redirecting to user dashboard...');
-                router.replace('/user-dashboard');
-              } else {
-                console.log('-> User needs to complete assessment, redirecting to game select...');
-                router.replace('/onboarding/game-select');
-              }
-            } else {
-              console.log('-> Assessment check failed, redirecting to user dashboard...');
-              router.replace('/user-dashboard');
-            }
-          } catch (assessmentError) {
-            console.error('Error checking assessment status:', assessmentError);
-            console.log('-> Assessment check failed, redirecting to user dashboard...');
-            router.replace('/user-dashboard');
-          }
-        } else {
-          console.log('-> User has not completed onboarding, redirecting to onboarding...');
-          router.replace('/onboarding/personal-info');
-        }
-      }
-    };
-
-    checkAuthStatus();
-  }, [session]);
+    // Only redirect if user is not pending auth check
+    // Don't redirect authenticated users - let them stay on home page unless they click "Get Started"
+    // This prevents interfering with login.tsx redirect logic
+    if (!isPending && !session?.user) {
+      console.log('-> User is not authenticated, staying on home page');
+    } else if (!isPending && session?.user) {
+      console.log('-> User is authenticated, staying on home page - let login handle redirects');
+    }
+  }, [session, isPending]);
 
   const handleGetStarted = () => {
     router.push('/login');
