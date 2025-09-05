@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@core/theme/theme';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { authClient } from '@/lib/auth-client';
 
 // BackgroundGradient Component (consistent with profile)
 const BackgroundGradient = () => {
@@ -71,9 +72,16 @@ export default function SettingsScreen() {
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: () => {
-            console.log('User signed out');
-            // Add actual logout logic here
+          onPress: async () => {
+            try {
+              console.log('User signing out...');
+              // Add actual logout logic here
+              await authClient.signOut();
+              router.replace('/login');
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
           },
         },
       ]
@@ -168,6 +176,21 @@ export default function SettingsScreen() {
           type: 'navigate',
           icon: 'information-circle-outline',
           action: () => router.push('/about'),
+        },
+      ],
+    },
+    {
+      id: 'account_actions',
+      title: 'Account Actions',
+      items: [
+        {
+          id: 'logout',
+          title: 'Sign Out',
+          subtitle: 'Sign out of your account',
+          type: 'action',
+          icon: 'log-out-outline',
+          action: handleLogout,
+          iconColor: '#EF4444',
         },
       ],
     },

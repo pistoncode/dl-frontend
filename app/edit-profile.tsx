@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
   KeyboardAvoidingView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +19,8 @@ import { theme } from '@core/theme/theme';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { useSession, authClient } from '@/lib/auth-client';
+import { getBackendBaseURL } from '@/config/network';
 
 // BackgroundGradient Component (consistent with profile and settings)
 const BackgroundGradient = () => {
@@ -43,16 +46,55 @@ interface FormData {
 }
 
 export default function EditProfileScreen() {
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [formData, setFormData] = useState<FormData>({
-    fullName: 'Kenneth Riadi',
-    username: 'Ken',
-    email: 'ken@example.com',
-    phoneNumber: '+60 12-345 6789',
-    location: 'Sepang, Selangor',
-    bio: 'Tennis enthusiast, weekend warrior, always up for a good match!',
+    fullName: '',
+    username: '',
+    email: '',
+    phoneNumber: '',
+    location: '',
+    bio: '',
     profilePicture: '',
   });
+
+  // Fetch current profile data
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!session?.user?.id) {
+        setIsDataLoading(false);
+        return;
+      }
+
+      try {
+        const backendUrl = getBackendBaseURL();
+        const response = await authClient.$fetch(`${backendUrl}/api/player/profile/me`, {
+          method: 'GET',
+        });
+
+        if (response && response.data && response.data.data) {
+          const profileData = response.data.data;
+          setFormData({
+            fullName: profileData.name || '',
+            username: profileData.username || '',
+            email: profileData.email || '',
+            phoneNumber: profileData.phoneNumber || '',
+            location: profileData.area || '',
+            bio: profileData.bio || '',
+            profilePicture: profileData.image || '',
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+        Alert.alert('Error', 'Failed to load profile data');
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, [session?.user?.id]);
 
   const updateField = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -81,24 +123,62 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    if (!session?.user?.id) {
+      Alert.alert('Error', 'You must be logged in to update your profile');
+      return;
+    }
+
+    // Basic validation
+    if (!formData.fullName.trim() || !formData.username.trim() || !formData.email.trim()) {
+      Alert.alert('Error', 'Please fill in all required fields (Name, Username, Email)');
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Here you would make the actual API call to update the profile
-      console.log('Profile updated:', formData);
-      
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(
-        'Profile Updated',
-        'Your profile has been successfully updated.',
-        [{ text: 'OK', onPress: () => router.back() }]
-      );
+      const backendUrl = getBackendBaseURL();
+      const response = await authClient.$fetch(`${backendUrl}/api/player/profile/me`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: formData.fullName.trim(),
+          username: formData.username.trim(),
+          email: formData.email.trim(),
+          location: formData.location.trim(),
+          image: formData.profilePicture || null,
+          phoneNumber: formData.phoneNumber.trim() || null,
+          bio: formData.bio.trim() || null,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response && response.data && response.data.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert(
+          'Profile Updated',
+          'Your profile has been successfully updated.',
+          [{ 
+            text: 'OK', 
+            onPress: () => {
+              router.dismiss();
+              router.push('/profile');
+            }
+          }]
+        );
+      } else {
+        // Check if it's a successful HTTP response but with success: false
+        const errorMessage = response?.data?.message || response?.message || 'Failed to update profile';
+        throw new Error(errorMessage);
+      }
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      console.error('Error updating profile:', error);
+      
+      const errorMessage = error?.message || 'Failed to update profile. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -125,6 +205,21 @@ export default function EditProfileScreen() {
       />
     </View>
   );
+
+  // Show loading screen while fetching data
+  if (isDataLoading) {
+    return (
+      <View style={styles.container}>
+        <BackgroundGradient />
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.loadingText}>Loading profile...</Text>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -181,9 +276,8 @@ export default function EditProfileScreen() {
               <View style={styles.profileImageContainer}>
                 <View style={styles.profileImageWrapper}>
                   <Image
-                    source={{ uri: formData.profilePicture }}
+                    source={{ uri: formData.profilePicture || 'https://i.pravatar.cc/150?img=1' }}
                     style={styles.profileImage}
-                    defaultSource={{ uri: 'https://i.pravatar.cc/150?img=1' }}
                     onError={() => console.log('Profile image failed to load')}
                   />
                 </View>
@@ -508,5 +602,17 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fontFamily.primary,
     fontStyle: 'italic',
     minHeight: 60,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.lg,
+  },
+  loadingText: {
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.neutral.white,
+    fontFamily: theme.typography.fontFamily.primary,
+    marginTop: theme.spacing.md,
   },
 });

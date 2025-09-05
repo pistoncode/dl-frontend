@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { useDashboard } from '../DashboardContext';
 import { NavBar } from '@/shared/components/layout';
 import * as Haptics from 'expo-haptics';
-import { signOut } from '@/lib/auth-client';
+// import { signOut } from '@/lib/auth-client'; // Removed - logout now handled in settings
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,14 +25,7 @@ export default function DashboardScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      router.replace('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+  // handleLogout removed - logout functionality moved to settings page
 
   return (
     <SafeAreaView style={styles.container}>
@@ -48,12 +41,7 @@ export default function DashboardScreen() {
            <View style={styles.headerContainer}>
              <Text style={styles.logoText}>DEUCE</Text>
              <View style={styles.headerRight}>
-               <TouchableOpacity 
-                 style={styles.logoutButton}
-                 onPress={handleLogout}
-               >
-                 <Text style={styles.logoutText}>Logout</Text>
-               </TouchableOpacity>
+               {/* Logout button removed - now available in settings page */}
                <TouchableOpacity 
                  style={styles.profilePicture}
                  onPress={() => {
@@ -240,17 +228,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  logoutButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: '#FF6B6B',
-    borderRadius: 6,
-  },
-  logoutText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
+  // logoutButton styles removed - logout now in settings page
   profilePicture: {
     width: 40,
     height: 40,

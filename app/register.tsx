@@ -35,7 +35,7 @@ export default function RegisterScreen() {
       username: username,
       email: email,
       name: "name",
-      // phone: phoneNumber,
+      // phone: phoneNumber, // Note: better-auth doesn't support phone field by default
       password: password,
       });
       if (error) {

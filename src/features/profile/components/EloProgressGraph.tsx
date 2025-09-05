@@ -32,14 +32,33 @@ export const EloProgressGraph: React.FC<EloProgressGraphProps> = ({ data, onPoin
   const chartHeight = graphHeight - padding.top - padding.bottom;
   
   // Find min and max ratings for scaling
-  const ratings = data.map(d => d.rating);
-  const minRating = Math.min(...ratings) - 50; // Add padding for better visualization
-  const maxRating = Math.max(...ratings) + 50;
+  const ratings = data.map(d => d.rating).filter(r => !isNaN(r) && typeof r === 'number');
   
-  // Scale functions
-  const xScale = (index: number) => (index / (data.length - 1)) * chartWidth + padding.left;
-  const yScale = (rating: number) => 
-    chartHeight - ((rating - minRating) / (maxRating - minRating)) * chartHeight + padding.top;
+  // Safety checks to prevent NaN issues
+  let minRating = 1350; // Default minimum
+  let maxRating = 1450; // Default maximum
+  
+  if (ratings.length > 0) {
+    minRating = Math.min(...ratings) - 50;
+    maxRating = Math.max(...ratings) + 50;
+    
+    // Additional safety check
+    if (isNaN(minRating)) minRating = 1350;
+    if (isNaN(maxRating)) maxRating = 1450;
+  }
+  
+  // Scale functions with safety checks
+  const xScale = (index: number) => {
+    if (data.length <= 1) return chartWidth / 2 + padding.left; // Center single point
+    return (index / (data.length - 1)) * chartWidth + padding.left;
+  };
+  
+  const yScale = (rating: number) => {
+    if (isNaN(rating)) rating = 1400; // Default rating
+    const range = maxRating - minRating;
+    if (range === 0) return chartHeight / 2 + padding.top; // Center if no range
+    return chartHeight - ((rating - minRating) / range) * chartHeight + padding.top;
+  };
   
   // Create points array for polyline
   const points = data

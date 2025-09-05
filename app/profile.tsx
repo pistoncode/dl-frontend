@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,13 +15,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Line, Circle, Polyline, G, Text as SvgText } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@core/theme/theme';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { DropdownModal, WinRateCircle, MatchDetailsModal, EloProgressGraph, EditIcon, MatchHistoryButton, AchievementIcon } from '../src/features/profile/components';
 import type { GameData, UserData } from '../src/features/profile/types';
-import { mockEloData, userData, gameTypeOptions } from '../src/features/profile/data/mockData';
+// import { mockEloData, userData, gameTypeOptions } from '../src/features/profile/data/mockData'; // Team lead's original mock data - commented for API implementation
 import { useProfileState } from '../src/features/profile/hooks/useProfileState';
 import { useProfileHandlers } from '../src/features/profile/hooks/useProfileHandlers';
+import { useSession, authClient } from '@/lib/auth-client';
+import { getBackendBaseURL } from '@/config/network';
+import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 
@@ -39,7 +42,11 @@ const SPORT_COLORS = {
 
 const generateCurvePath = (width: number): string => {
   const { HEIGHT, DEPTH, START_Y } = CURVE_CONFIG;
-  return `M0,${HEIGHT} L0,${START_Y} Q${width/2},${DEPTH} ${width},${START_Y} L${width},${START_Y} L${width},${HEIGHT} Z`;
+  
+  // Safety check for width to prevent NaN issues
+  const safeWidth = !isNaN(width) && width > 0 ? width : 300; // Default fallback width
+  
+  return `M0,${HEIGHT} L0,${START_Y} Q${safeWidth/2},${DEPTH} ${safeWidth},${START_Y} L${safeWidth},${START_Y} L${safeWidth},${HEIGHT} Z`;
 };
 
 // ELO Progress Graph Component
@@ -50,6 +57,12 @@ const generateCurvePath = (width: number): string => {
 
 
 export default function ProfileAdaptedScreen() {
+  const { data: session } = useSession();
+  const [profileData, setProfileData] = useState(null);
+  const [matchHistory, setMatchHistory] = useState([]);
+  const [achievements, setAchievements] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
   const {
     activeTab,
     selectedGame,
@@ -83,8 +96,242 @@ export default function ProfileAdaptedScreen() {
     setModalVisible,
   });
   
-  // Using imported userData and gameTypeOptions from mockData
+  // API functions to fetch real data from backend
+  const fetchAchievements = async () => {
+    try {
+      if (!session?.user?.id) {
+        console.log('No session user ID available for achievements');
+        return;
+      }
 
+      const backendUrl = getBackendBaseURL();
+      console.log('Fetching achievements from:', `${backendUrl}/api/player/profile/achievements`);
+      
+      const response = await authClient.$fetch(`${backendUrl}/api/player/profile/achievements`, {
+        method: 'GET',
+      });
+      
+      console.log('Achievements API response:', response);
+      
+      if (response && response.data && response.data.achievements) {
+        console.log('Setting achievements data:', response.data.achievements);
+        setAchievements(response.data.achievements);
+      } else {
+        console.log('No achievements data found, setting empty array');
+        setAchievements([]);
+      }
+    } catch (error) {
+      console.error('Error fetching achievements:', error);
+      setAchievements([]); // Set empty array on error
+    }
+  };
+
+  const fetchProfileData = async () => {
+    try {
+      if (!session?.user?.id) {
+        console.log('No session user ID available');
+        return;
+      }
+      
+      console.log('Current session:', session);
+      
+      const backendUrl = getBackendBaseURL();
+      console.log('Fetching profile data from:', `${backendUrl}/api/player/profile/me`);
+      
+      // Use authClient.$fetch as primary method for better session handling
+      const authResponse = await authClient.$fetch(`${backendUrl}/api/player/profile/me`, {
+        method: 'GET',
+      });
+      
+      console.log('Profile API response:', authResponse);
+      
+      if (authResponse && authResponse.data && authResponse.data.data) {
+        console.log('Setting profile data:', authResponse.data.data);
+        setProfileData(authResponse.data.data);
+      } else if (authResponse && authResponse.data) {
+        console.log('Setting profile data (direct):', authResponse.data);
+        setProfileData(authResponse.data);
+      } else {
+        console.error('No profile data received from authClient');
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+    }
+  };
+
+  const fetchMatchHistory = async () => {
+    try {
+      if (!session?.user?.id) return;
+      
+      const backendUrl = getBackendBaseURL();
+      console.log('Fetching match history from:', `${backendUrl}/api/player/profile/matches`);
+      
+      // Use authClient's internal fetch method for proper session handling
+      const response = await authClient.$fetch(`${backendUrl}/api/player/profile/matches`, {
+        method: 'GET',
+      });
+      
+      console.log('Match history data received:', response);
+      
+      if (response && response.data) {
+        setMatchHistory(response.data);
+      } else if (response && response.error && response.error.status === 404) {
+        console.log('No match history found for user (404) - this is normal for new users');
+        setMatchHistory([]);
+      } else {
+        console.error('No match history data received');
+        setMatchHistory([]);
+      }
+    } catch (error) {
+      console.error('Error fetching match history:', error);
+      
+      // Fallback to regular fetch with proper headers if authClient.$fetch fails
+      try {
+        const backendUrl = getBackendBaseURL();
+        const response = await fetch(`${backendUrl}/api/player/profile/matches`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            // Get session token from storage and include it
+            'Authorization': `Bearer ${await SecureStore.getItemAsync('deuceleague.sessionToken')}`,
+          },
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          setMatchHistory(result.data || []);
+        } else if (response.status === 404) {
+          console.log('No match history found (fallback 404) - normal for new users');
+          setMatchHistory([]);
+        }
+      } catch (fallbackError) {
+        console.error('Fallback fetch also failed:', fallbackError);
+        setMatchHistory([]); // Set empty array as final fallback
+      }
+    }
+  };
+
+  // Use useFocusEffect to refresh data every time the screen comes into focus
+  const loadData = useCallback(async () => {
+    if (session?.user?.id) {
+      setIsLoading(true);
+      // Fetch profile data and achievements
+      await fetchProfileData();
+      await fetchAchievements();
+      // await fetchMatchHistory(); // Commented until match system is ready
+      setIsLoading(false);
+    }
+  }, [session?.user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+  
+  // Fallback data using team lead's original mock data for when API is not available
+  // const { mockEloData, userData, gameTypeOptions } = require('../src/features/profile/data/mockData');
+  
+  // Transform API data to match frontend expectations
+  console.log('Transforming profile data:', profileData);
+  console.log('Skill ratings:', profileData?.skillRatings);
+  
+  const userData = profileData ? {
+    name: profileData.name || 'No name available',
+    username: profileData.username || profileData.displayUsername || 'No username',
+    bio: profileData.bio || 'No bio added yet.',
+    location: profileData.area || 'Location not set',
+    gender: profileData.gender || 'Gender not set',
+    skillLevel: 'Intermediate', // This would come from skillRatings
+    skillRatings: profileData.skillRatings || {}, // Pass through the actual skill ratings for DMR section
+    sports: profileData.skillRatings && typeof profileData.skillRatings === 'object' 
+      ? Object.keys(profileData.skillRatings).map(sport => sport.charAt(0).toUpperCase() + sport.slice(1)) 
+      : ['No sports yet'],
+    activeSports: profileData.skillRatings && typeof profileData.skillRatings === 'object' 
+      ? Object.keys(profileData.skillRatings).map(sport => sport.charAt(0).toUpperCase() + sport.slice(1)) 
+      : [],
+    achievements: achievements || [],
+  } : {
+    name: 'Loading...',
+    username: 'loading',
+    bio: 'Loading...',
+    location: 'Loading...',
+    gender: 'Loading...',
+    skillLevel: 'Loading...',
+    sports: [],
+    activeSports: [],
+    achievements: [],
+  };
+  
+  console.log('Final userData:', userData);
+  
+  // Helper function to get rating values from skillRatings
+  const getRatingForType = (sport: string, type: 'singles' | 'doubles') => {
+    if (userData.skillRatings && userData.skillRatings[sport.toLowerCase()]) {
+      const rating = userData.skillRatings[sport.toLowerCase()];
+      
+      // Check for specific singles/doubles rating first
+      if (type === 'singles' && rating.singles) {
+        return Math.round(rating.singles * 1000); // Convert to display format
+      } else if (type === 'doubles' && rating.doubles) {
+        return Math.round(rating.doubles * 1000); // Convert to display format
+      } else if (rating.rating) {
+        // Fallback to general rating if specific type not available
+        return Math.round(rating.rating * 1000);
+      }
+    }
+    return 0; // Default to 0 if no rating available
+  };
+  
+  const gameTypeOptions = ['Singles', 'Doubles']; // Static options
+  
+  // Calculate win rate from match history - placeholder until match system is implemented
+  const calculateWinRate = () => {
+    if (userData.name === 'Loading...') return 0; // Still loading
+    
+    // Check if user has match data
+    const hasMatches = profileData?.totalMatches && profileData.totalMatches > 0;
+    if (hasMatches) {
+      // TODO: Calculate actual win rate from match history when matches exist
+      return 0; // For now, return 0 until we have match data
+    }
+    return 0; // No matches yet
+  };
+  
+  // Placeholder ELO data until match system is implemented
+  const mockEloData = [
+    {
+      date: 'No matches yet',
+      time: '',
+      rating: 1400,
+      opponent: 'No data available',
+      result: '-',
+      score: '-',
+      ratingChange: 0,
+      league: 'Play your first match to see data here!',
+      player1: userData.name || 'You',
+      player2: 'No opponent',
+      scores: { 
+        set1: { player1: null, player2: null }, 
+        set2: { player1: null, player2: null }, 
+        set3: { player1: null, player2: null } 
+      },
+      status: 'pending'
+    }
+  ];
+  
+  // Using real API data instead of mock data
+
+
+  // Show loading state while fetching data
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -217,19 +464,31 @@ export default function ProfileAdaptedScreen() {
             <Text style={styles.sectionTitle}>Achievements</Text>
             <Pressable style={styles.achievementContainer}>
               <View style={styles.achievementsContent}>
-                {userData.achievements.slice(0, 2).map((achievement) => (
-                  <View key={achievement.id} style={styles.achievementItem}>
-                    <AchievementIcon iconName={achievement.icon} />
-                    <View style={styles.achievementTextContainer}>
-                      <Text style={styles.achievementText}>{achievement.title}</Text>
-                      {achievement.year && (
-                        <Text style={styles.achievementYear}>({achievement.year})</Text>
-                      )}
+                {userData.achievements && userData.achievements.length > 0 ? (
+                  userData.achievements.slice(0, 2).map((achievement) => (
+                    <View key={achievement.id} style={styles.achievementItem}>
+                      <AchievementIcon iconName={achievement.icon} />
+                      <View style={styles.achievementTextContainer}>
+                        <Text style={styles.achievementText}>{achievement.title}</Text>
+                        {achievement.unlockedAt && (
+                          <Text style={styles.achievementYear}>
+                            ({new Date(achievement.unlockedAt).getFullYear()})
+                          </Text>
+                        )}
+                      </View>
                     </View>
+                  ))
+                ) : (
+                  <View style={styles.noAchievementsContainer}>
+                    <Ionicons name="trophy-outline" size={32} color={theme.colors.neutral.gray[400]} />
+                    <Text style={styles.noAchievementsText}>No achievements yet</Text>
+                    <Text style={styles.noAchievementsSubtext}>Keep playing to unlock achievements!</Text>
                   </View>
-                ))}
+                )}
               </View>
-              <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} style={styles.achievementChevron} />
+              {userData.achievements && userData.achievements.length > 0 && (
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} style={styles.achievementChevron} />
+              )}
             </Pressable>
           </View>
 
@@ -277,13 +536,17 @@ export default function ProfileAdaptedScreen() {
                   <View style={styles.dmrItemVertical}>
                     <Text style={styles.dmrTypeLabel}>Singles</Text>
                     <View style={styles.ratingCircleSmall}>
-                      <Text style={styles.ratingTextSmall}>1440</Text>
+                      <Text style={styles.ratingTextSmall}>
+                        {getRatingForType(userData.sports[0] || 'pickleball', 'singles') || 'N/A'}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.dmrItemVertical}>
                     <Text style={styles.dmrTypeLabel}>Doubles</Text>
                     <View style={styles.ratingCircleSmall}>
-                      <Text style={styles.ratingTextSmall}>1380</Text>
+                      <Text style={styles.ratingTextSmall}>
+                        {getRatingForType(userData.sports[0] || 'pickleball', 'doubles') || 'N/A'}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -337,7 +600,7 @@ export default function ProfileAdaptedScreen() {
               
               {/* Win Rate Circle Chart */}
               <View style={styles.winRateContainer}>
-                <WinRateCircle winRate={75} />
+                <WinRateCircle winRate={calculateWinRate()} />
                 <View style={styles.winRateLegend}>
                   <View style={styles.legendItem}>
                     <View style={[styles.legendColor, { backgroundColor: '#34C759' }]} />
@@ -589,6 +852,26 @@ const styles = StyleSheet.create({
   },
   achievementChevron: {
     marginLeft: theme.spacing.sm,
+  },
+  noAchievementsContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.lg,
+  },
+  noAchievementsText: {
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.neutral.gray[600],
+    fontFamily: theme.typography.fontFamily.primary,
+    fontWeight: theme.typography.fontWeight.medium,
+    marginTop: theme.spacing.sm,
+  },
+  noAchievementsSubtext: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.neutral.gray[400],
+    fontFamily: theme.typography.fontFamily.primary,
+    textAlign: 'center',
+    marginTop: theme.spacing.xs,
   },
   sportsHeader: {
     flexDirection: 'row',
@@ -1095,6 +1378,15 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.neutral.gray[700],
+    fontFamily: theme.typography.fontFamily.primary,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: theme.typography.fontSize.lg,
+    color: theme.colors.neutral.gray[600],
     fontFamily: theme.typography.fontFamily.primary,
   },
 });

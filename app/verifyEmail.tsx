@@ -16,15 +16,15 @@ export default function VerifyEmailScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [otpFocused, setOtpFocused] = useState(false);
 
-  // useEffect(() => {
-  //   if (typeof params.email === 'string' && params.email ) {
-  //     setEmail(params.email);
-  //     authClient.emailOtp.sendVerificationOtp({
-  //       email: params.email,
-  //       type: "email-verification",
-  //     });
-  //   }
-  // }, [params.email]);
+  useEffect(() => {
+    if (typeof params.email === 'string' && params.email ) {
+      setEmail(params.email);
+      authClient.emailOtp.sendVerificationOtp({
+        email: params.email,
+        type: "email-verification",
+      });
+    }
+  }, [params.email]);
 
   const handleVerifyOtp = async () => {
     if (!otp.trim() || otp.length < 6) {

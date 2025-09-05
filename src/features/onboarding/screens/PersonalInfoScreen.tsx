@@ -86,7 +86,7 @@ const PersonalInfoScreen = () => {
         dateOfBirth: formData.dateOfBirth?.toISOString().split('T')[0] || '',
       });
 
-      // Navigate to next screen on success
+      // Navigate to location screen (required step)
       router.push('/onboarding/location');
     } catch (error) {
       console.error('Error saving profile:', error);

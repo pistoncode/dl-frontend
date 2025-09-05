@@ -42,11 +42,45 @@ export default function HomeScreen() {
         return;
       }
       if (session?.user) {
+        // Don't redirect if email is not verified - let user complete email verification first
+        if (!session.user.emailVerified) {
+          console.log('-> User email not verified, staying on current page for email verification');
+          return;
+        }
+        
         const hasCompletedOnboarding = await checkOnboardingStatus(session.user.id);
         
         if (hasCompletedOnboarding) {
-          console.log('-> User has completed onboarding, redirecting to user dashboard...');
-          router.replace('/user-dashboard');
+          console.log('-> User has completed basic onboarding, checking assessment status...');
+          
+          // Check if user has completed sport assessment
+          try {
+            const backendUrl = getBackendBaseURL();
+            const assessmentResponse = await fetch(`${backendUrl}/api/onboarding/assessment-status/${session.user.id}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            if (assessmentResponse.ok) {
+              const assessmentData = await assessmentResponse.json();
+              if (assessmentData.hasCompletedAssessment) {
+                console.log('-> User completed assessment, redirecting to user dashboard...');
+                router.replace('/user-dashboard');
+              } else {
+                console.log('-> User needs to complete assessment, redirecting to game select...');
+                router.replace('/onboarding/game-select');
+              }
+            } else {
+              console.log('-> Assessment check failed, redirecting to user dashboard...');
+              router.replace('/user-dashboard');
+            }
+          } catch (assessmentError) {
+            console.error('Error checking assessment status:', assessmentError);
+            console.log('-> Assessment check failed, redirecting to user dashboard...');
+            router.replace('/user-dashboard');
+          }
         } else {
           console.log('-> User has not completed onboarding, redirecting to onboarding...');
           router.replace('/onboarding/personal-info');
